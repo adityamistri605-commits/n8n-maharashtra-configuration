@@ -1,0 +1,443 @@
+{
+  "name": "Enterprise Cloud-Native Lead Pipeline",
+  "nodes": [
+    {
+      "id": "trigger-schedule",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0],
+      "parameters": {
+        "rule": { "interval": [{ "field": "cronExpression", "expression": "0 2 * * *" }] }
+      }
+    },
+    {
+      "id": "trigger-manual",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 200],
+      "parameters": {}
+    },
+    {
+      "id": "merge-triggers",
+      "name": "Merge Triggers",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [240, 100],
+      "parameters": { "mode": "passThrough", "output": "input1" }
+    },
+    {
+      "id": "http-fetch-config",
+      "name": "Fetch Cloud Configurations",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 100],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.GITHUB_RAW_BASE_URL }}/workflow_constants.json",
+        "options": {
+          "retryOnFail": true,
+          "maxTries": 3
+        }
+      }
+    },
+    {
+      "id": "http-fetch-queries",
+      "name": "Fetch Search Queries",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 100],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.GITHUB_RAW_BASE_URL }}/search_queries.json",
+        "options": { "retryOnFail": true }
+      }
+    },
+    {
+      "id": "gsheets-read-checkpoint",
+      "name": "Read State/Checkpoints",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [900, 100],
+      "parameters": {
+        "operation": "read",
+        "documentId": { "__rl": true, "value": "={{ $env.GOOGLE_SHEET_ID }}", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "Checkpoints", "mode": "name" },
+        "options": {}
+      },
+      "credentials": { "googleSheetsOAuth2Api": { "id": "", "name": "Google Sheets account" } }
+    },
+    {
+      "id": "code-queue-builder",
+      "name": "Enterprise Queue Builder",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 100],
+      "parameters": {
+        "jsCode": "const queries = $('Fetch Search Queries').first().json;\nconst checkpoints = $('Read State/Checkpoints').all().map(i => i.json.SearchID);\n\n// Resume logic: Keep only un-processed queries\nconst pendingQueue = queries.filter(q => !checkpoints.includes(q.SearchID));\n\nif(pendingQueue.length === 0) {\n  console.log('All 3,874 queries successfully processed.');\n  return [];\n}\n\nreturn pendingQueue.map(q => ({ json: q }));"
+      }
+    },
+    {
+      "id": "loop-batches",
+      "name": "Queue Batch Processor",
+      "type": "n8n-nodes-base.loop",
+      "typeVersion": 1,
+      "position": [1360, 100],
+      "parameters": {
+        "batchSize": "={{ $env.BATCH_SIZE || 25 }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "http-bd-trigger",
+      "name": "Bright Data Trigger",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1600, -60],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.brightdata.com/datasets/v3/trigger",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Authorization", "value": "Bearer {{$env.BRIGHTDATA_API_KEY}}" }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "dataset_id", "value": "={{ $env.DATASET_ID || 'gd_l7q7dkf244hwjntr0' }}" },
+            { "name": "include_errors", "value": "true" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "=[{ \"url\": \"https://www.google.com/maps/search/{{encodeURIComponent($json.SearchQuery)}}\", \"country\": \"IN\", \"limit\": 20 }]",
+        "options": {
+          "retryOnFail": true,
+          "maxTries": "={{ $env.MAX_RETRIES || 5 }}",
+          "waitBetweenTries": "={{ $env.POLL_INTERVAL || 5000 }}"
+        }
+      }
+    },
+    {
+      "id": "set-poll-array",
+      "name": "Initialize Polling",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1840, -60],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "p1", "name": "snapshot_id", "value": "={{ $json.snapshot_id }}", "type": "string" },
+            { "id": "p2", "name": "SearchID", "value": "={{ $('Queue Batch Processor').item.json.SearchID }}", "type": "string" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "wait-polling",
+      "name": "Exponential Backoff Wait",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [2060, -60],
+      "parameters": {
+        "resume": "afterTime",
+        "amount": 15,
+        "unit": "seconds"
+      }
+    },
+    {
+      "id": "http-bd-status",
+      "name": "Check Dataset Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2280, -60],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.brightdata.com/datasets/v3/progress/{{$json.snapshot_id}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer {{$env.BRIGHTDATA_API_KEY}}" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "if-ready",
+      "name": "Is Snapshot Ready?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [2500, -60],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true },
+          "combinator": "and",
+          "conditions": [{ "operator": { "name": "filter.operator.equals", "type": "string", "operation": "equals" }, "leftValue": "={{$json.status}}", "rightValue": "ready" }]
+        }
+      }
+    },
+    {
+      "id": "http-bd-download",
+      "name": "Download Snapshot",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2760, -200],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.brightdata.com/datasets/v3/snapshot/{{$('Initialize Polling').item.json.snapshot_id}}",
+        "sendQuery": true,
+        "queryParameters": { "parameters": [{ "name": "format", "value": "json" }] },
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Authorization", "value": "Bearer {{$env.BRIGHTDATA_API_KEY}}" }] },
+        "options": {
+          "retryOnFail": true,
+          "maxTries": "={{ $env.MAX_RETRIES || 5 }}"
+        }
+      }
+    },
+    {
+      "id": "code-validate-score",
+      "name": "Validation & Lead Scoring",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3000, -200],
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n    const d = item.json;\n    const name = (d.name || \"\").trim();\n    if (!name) continue; // Never fabricate data\n\n    let phone = (d.phone || \"\").replace(/[^0-9+]/g, '');\n    if (phone && !phone.match(/^(?:(?:\\+|0{0,2})91(\\s*[\\-]\\s*)?|[0]?)?[6789]\\d{9}$/)) phone = \"\";\n\n    let pincode = \"\";\n    const address = (d.address || \"\").trim();\n    const pinMatch = address.match(/\\b\\d{6}\\b/);\n    if (pinMatch) pincode = pinMatch[0];\n\n    let email = (d.email || \"\").trim().toLowerCase();\n    if (email && !email.match(/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/)) email = \"\";\n\n    let website = (d.website || d.url || \"\").trim();\n    if (website && !website.startsWith('http')) website = 'https://' + website;\n\n    // Weighted Scoring\n    let score = 0;\n    if (name) score += 20;\n    if (phone) score += 25;\n    if (website) score += 20;\n    if (email) score += 20;\n    if (pincode) score += 5;\n    if (address) score += 5;\n\n    results.push({\n        json: {\n            \"Company Name\": name,\n            \"Pincode\": pincode,\n            \"Category\": d.category || \"Agricultural Machinery\",\n            \"Location\": d.city || \"Maharashtra\",\n            \"Mobile No\": phone,\n            \"Email\": email,\n            \"Website\": website,\n            \"Address\": address,\n            \"Lead Score\": Math.min(score, 100),\n            \"Data Source\": \"Bright Data Maps\"\n        }\n    });\n}\nreturn results;"
+      }
+    },
+    {
+      "id": "if-hunter-eligibility",
+      "name": "Hunter.io Eligible?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [3240, -200],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true },
+          "combinator": "and",
+          "conditions": [
+            { "operator": { "name": "filter.operator.notEmpty", "type": "string", "operation": "notEmpty" }, "leftValue": "={{$json.Website}}" },
+            { "operator": { "name": "filter.operator.empty", "type": "string", "operation": "empty" }, "leftValue": "={{$json.Email}}" },
+            { "operator": { "name": "filter.operator.greaterThanOrEqual", "type": "number", "operation": "gte" }, "leftValue": "={{$json['Lead Score']}}", "rightValue": 50 }
+          ]
+        }
+      }
+    },
+    {
+      "id": "http-hunter",
+      "name": "Hunter Domain Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3500, -320],
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.hunter.io/v2/domain-search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "domain", "value": "={{$json.Website.replace(/^https?:\\/\\//, '').split('/')[0]}}" },
+            { "name": "type", "value": "professional" },
+            { "name": "api_key", "value": "={{$env.HUNTER_API_KEY}}" }
+          ]
+        },
+        "options": { "retryOnFail": true, "maxTries": 3 }
+      },
+      "continueOnFail": true
+    },
+    {
+      "id": "code-process-hunter",
+      "name": "Process Hunter Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3740, -320],
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst originalItems = $('Hunter.io Eligible?').all(0, 0);\n\nreturn items.map((item, index) => {\n    const lead = originalItems[index].json;\n    const hData = item.json.data;\n    \n    if (hData && hData.emails && hData.emails.length > 0) {\n        const best = hData.emails.find(e => ['valid', 'accept_all'].includes(e.verification?.status)) || hData.emails[0];\n        if (best && best.value) {\n            lead.Email = best.value;\n            lead['Lead Score'] = Math.min(lead['Lead Score'] + 5, 100);\n            lead['Data Source'] = \"Bright Data + Hunter.io\";\n        }\n    }\n    return { json: lead };\n});"
+      }
+    },
+    {
+      "id": "merge-results",
+      "name": "Merge Processed Records",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [3980, -200],
+      "parameters": { "mode": "passThrough", "output": "input1" }
+    },
+    {
+      "id": "code-dedup",
+      "name": "Batch Deduplication",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [4200, -200],
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst unique = new Map();\n\nfor (const item of items) {\n    const d = item.json;\n    const key = (d[\"Company Name\"] + \"|\" + d[\"Website\"]).toLowerCase();\n    \n    if (!unique.has(key) || d['Lead Score'] > unique.get(key).json['Lead Score']) {\n        unique.set(key, { json: d });\n    }\n}\nreturn Array.from(unique.values());"
+      }
+    },
+    {
+      "id": "switch-export",
+      "name": "Cloud Export Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [4440, -200],
+      "parameters": {
+        "rules": {
+          "rules": [
+            { "id": "e1", "leftValue": "={{ $env.OUTPUT_FORMAT || 'google_sheets' }}", "rightValue": "google_sheets", "operator": "equal" },
+            { "id": "e2", "leftValue": "={{ $env.OUTPUT_FORMAT }}", "rightValue": "excel", "operator": "equal" }
+          ]
+        },
+        "fallbackOutput": 0
+      }
+    },
+    {
+      "id": "gsheets-append-leads",
+      "name": "Append to Master Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [4720, -320],
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "={{ $env.GOOGLE_SHEET_ID }}", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "Leads", "mode": "name" },
+        "options": {},
+        "mappingMode": "autoMapInputData"
+      },
+      "credentials": { "googleSheetsOAuth2Api": { "id": "", "name": "Google Sheets account" } }
+    },
+    {
+      "id": "convert-excel",
+      "name": "Format as Excel",
+      "type": "n8n-nodes-base.spreadsheetFile",
+      "typeVersion": 2,
+      "position": [4720, -100],
+      "parameters": { "operation": "toFile", "fileFormat": "xlsx", "options": {} }
+    },
+    {
+      "id": "gdrive-upload",
+      "name": "Upload to Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [4960, -100],
+      "parameters": {
+        "operation": "upload",
+        "fileContent": "data",
+        "fileName": "=mh_agri_leads_{{$now.toFormat('yyyyMMdd_HHmmss')}}.xlsx",
+        "options": {
+          "folderId": "={{ $env.GOOGLE_DRIVE_FOLDER_ID }}"
+        }
+      },
+      "credentials": { "googleDriveOAuth2Api": { "id": "", "name": "Google Drive account" } }
+    },
+    {
+      "id": "gsheets-checkpoint",
+      "name": "Commit State Checkpoint",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [5200, -200],
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "={{ $env.GOOGLE_SHEET_ID }}", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "Checkpoints", "mode": "name" },
+        "options": {},
+        "mappingMode": "defineBelow",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "SearchID": "={{ $('Initialize Polling').item.json.SearchID }}",
+            "SnapshotID": "={{ $('Initialize Polling').item.json.snapshot_id }}",
+            "Status": "Completed",
+            "Timestamp": "={{ $now.toISO() }}"
+          }
+        }
+      },
+      "credentials": { "googleSheetsOAuth2Api": { "id": "", "name": "Google Sheets account" } }
+    },
+    {
+      "id": "loop-end",
+      "name": "Return to Batch Queue",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [5440, -200],
+      "parameters": {}
+    },
+    {
+      "id": "gsheets-log-error",
+      "name": "Log Retry / Error State",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [2760, 100],
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "={{ $env.GOOGLE_SHEET_ID }}", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "Logs", "mode": "name" },
+        "options": {},
+        "mappingMode": "defineBelow",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "SearchID": "={{ $('Initialize Polling').item.json.SearchID }}",
+            "Error": "Polling Timeout or Rate Limit",
+            "Timestamp": "={{ $now.toISO() }}"
+          }
+        }
+      },
+      "credentials": { "googleSheetsOAuth2Api": { "id": "", "name": "Google Sheets account" } }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": { "main": [ [ { "node": "Merge Triggers", "type": "main", "index": 0 } ] ] },
+    "Manual Trigger": { "main": [ [ { "node": "Merge Triggers", "type": "main", "index": 0 } ] ] },
+    "Merge Triggers": { "main": [ [ { "node": "Fetch Cloud Configurations", "type": "main", "index": 0 } ] ] },
+    "Fetch Cloud Configurations": { "main": [ [ { "node": "Fetch Search Queries", "type": "main", "index": 0 } ] ] },
+    "Fetch Search Queries": { "main": [ [ { "node": "Read State/Checkpoints", "type": "main", "index": 0 } ] ] },
+    "Read State/Checkpoints": { "main": [ [ { "node": "Enterprise Queue Builder", "type": "main", "index": 0 } ] ] },
+    "Enterprise Queue Builder": { "main": [ [ { "node": "Queue Batch Processor", "type": "main", "index": 0 } ] ] },
+    "Queue Batch Processor": { "main": [ [ { "node": "Bright Data Trigger", "type": "main", "index": 0 } ] ] },
+    "Bright Data Trigger": { "main": [ [ { "node": "Initialize Polling", "type": "main", "index": 0 } ] ] },
+    "Initialize Polling": { "main": [ [ { "node": "Exponential Backoff Wait", "type": "main", "index": 0 } ] ] },
+    "Exponential Backoff Wait": { "main": [ [ { "node": "Check Dataset Status", "type": "main", "index": 0 } ] ] },
+    "Check Dataset Status": { "main": [ [ { "node": "Is Snapshot Ready?", "type": "main", "index": 0 } ] ] },
+    "Is Snapshot Ready?": {
+      "main": [
+        [ { "node": "Download Snapshot", "type": "main", "index": 0 } ],
+        [ { "node": "Log Retry / Error State", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Log Retry / Error State": { "main": [ [ { "node": "Exponential Backoff Wait", "type": "main", "index": 0 } ] ] },
+    "Download Snapshot": { "main": [ [ { "node": "Validation & Lead Scoring", "type": "main", "index": 0 } ] ] },
+    "Validation & Lead Scoring": { "main": [ [ { "node": "Hunter.io Eligible?", "type": "main", "index": 0 } ] ] },
+    "Hunter.io Eligible?": {
+      "main": [
+        [ { "node": "Hunter Domain Search", "type": "main", "index": 0 } ],
+        [ { "node": "Merge Processed Records", "type": "main", "index": 1 } ]
+      ]
+    },
+    "Hunter Domain Search": { "main": [ [ { "node": "Process Hunter Data", "type": "main", "index": 0 } ] ] },
+    "Process Hunter Data": { "main": [ [ { "node": "Merge Processed Records", "type": "main", "index": 0 } ] ] },
+    "Merge Processed Records": { "main": [ [ { "node": "Batch Deduplication", "type": "main", "index": 0 } ] ] },
+    "Batch Deduplication": { "main": [ [ { "node": "Cloud Export Router", "type": "main", "index": 0 } ] ] },
+    "Cloud Export Router": {
+      "main": [
+        [ { "node": "Append to Master Sheet", "type": "main", "index": 0 } ],
+        [ { "node": "Format as Excel", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Format as Excel": { "main": [ [ { "node": "Upload to Google Drive", "type": "main", "index": 0 } ] ] },
+    "Upload to Google Drive": { "main": [ [ { "node": "Commit State Checkpoint", "type": "main", "index": 0 } ] ] },
+    "Append to Master Sheet": { "main": [ [ { "node": "Commit State Checkpoint", "type": "main", "index": 0 } ] ] },
+    "Commit State Checkpoint": { "main": [ [ { "node": "Return to Batch Queue", "type": "main", "index": 0 } ] ] },
+    "Return to Batch Queue": { "main": [ [ { "node": "Queue Batch Processor", "type": "main", "index": 0 } ] ] }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Kolkata",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  }
+}

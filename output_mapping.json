@@ -1,0 +1,21 @@
+{
+  "metadata": {
+    "version": "2.0.0",
+    "description": "Cloud runtime execution parameters."
+  },
+  "collection": {
+    "source": "Google Maps",
+    "maxBusinessesPerSearch": 20,
+    "language": "en"
+  },
+  "verification": {
+    "requireWebsite": false,
+    "useHunter": true,
+    "leaveBlankIfMissing": true
+  },
+  "batchControl": {
+    "defaultQueriesPerBatch": 25,
+    "exponentialBackoffBaseMs": 5000,
+    "maxRetries": 5
+  }
+}

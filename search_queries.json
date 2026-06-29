@@ -1,0 +1,29 @@
+{
+  "metadata": {
+    "version": "2.0.0",
+    "architecture": "cloud-native",
+    "description": "Global enterprise constants."
+  },
+  "constants": {
+    "geography": {
+      "state": "Maharashtra",
+      "stateCode": "MH",
+      "country": "India",
+      "countryCode": "IN"
+    },
+    "thresholds": {
+      "minimumLeadScoreForHunter": 50,
+      "minimumBusinessesRequired": 1,
+      "maxPollingAttempts": 15
+    },
+    "scoringWeights": {
+      "companyName": 20,
+      "phone": 25,
+      "website": 20,
+      "email": 20,
+      "pincode": 5,
+      "address": 5,
+      "hunterVerified": 5
+    }
+  }
+}

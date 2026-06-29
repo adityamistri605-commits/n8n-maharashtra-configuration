@@ -1,0 +1,14 @@
+{
+  "metadata": {
+    "version": "2.0.0",
+    "provider": "Bright Data"
+  },
+  "datasets": {
+    "googleMaps": {
+      "datasetId": "gd_l7q7dkf244hwjntr0",
+      "triggerEndpoint": "https://api.brightdata.com/datasets/v3/trigger",
+      "snapshotEndpoint": "https://api.brightdata.com/datasets/v3/snapshot/{{snapshotId}}",
+      "progressEndpoint": "https://api.brightdata.com/datasets/v3/progress/{{snapshotId}}"
+    }
+  }
+}

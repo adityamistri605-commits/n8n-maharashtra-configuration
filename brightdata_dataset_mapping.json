@@ -1,0 +1,14 @@
+{
+  "metadata": {
+    "version": "2.0.0",
+    "provider": "Hunter.io"
+  },
+  "endpoints": {
+    "domainSearch": "https://api.hunter.io/v2/domain-search"
+  },
+  "rules": {
+    "acceptableStatuses": ["valid", "accept_all"],
+    "rejectStatuses": ["invalid", "disposable", "webmail"],
+    "prioritizeProfessional": true
+  }
+}
