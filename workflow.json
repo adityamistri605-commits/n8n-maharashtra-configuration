@@ -347,7 +347,9 @@
           "retryOnFail": true,
           "maxTries": 5,
           "waitBetweenTries": 5000
-        }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
       },
       "credentials": {
         "httpHeaderAuth": {
@@ -490,7 +492,9 @@
           "retryOnFail": true,
           "maxTries": 5,
           "waitBetweenTries": 5000
-        }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
       },
       "credentials": {
         "httpHeaderAuth": {
@@ -560,7 +564,9 @@
           "retryOnFail": true,
           "maxTries": 5,
           "waitBetweenTries": 5000
-        }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
       },
       "credentials": {
         "httpHeaderAuth": {
