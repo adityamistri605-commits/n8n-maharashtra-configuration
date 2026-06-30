@@ -276,7 +276,7 @@
         -100
       ],
       "parameters": {
-        "jsCode": "const items = $input.all();\nif (items.length === 0 || !items[0].json.data) {\n  return [];\n}\n\nconst csvText = items[0].json.data;\n\n// Parse CSV manually\nconst lines = [];\nlet row = [\"\"];\nlet inQuotes = false;\n\nfor (let i = 0; i < csvText.length; i++) {\n  const c = csvText[i];\n  const next = csvText[i+1];\n  \n  if (c === '\"') {\n    if (inQuotes && next === '\"') {\n      row[row.length - 1] += '\"';\n      i++;\n    } else {\n      inQuotes = !inQuotes;\n    }\n  } else if (c === ',') {\n    if (inQuotes) {\n      row[row.length - 1] += c;\n    } else {\n      row.push(\"\");\n    }\n  } else if (c === '\\r' || c === '\\n') {\n    if (inQuotes) {\n      row[row.length - 1] += c;\n    } else {\n      if (c === '\\r' && next === '\\n') {\n        i++;\n      }\n      lines.push(row);\n      row = [\"\"];\n    }\n  } else {\n    row[row.length - 1] += c;\n  }\n}\nif (row.length > 1 || row[0] !== \"\") {\n  lines.push(row);\n}\n\nif (lines.length < 2) {\n  return [];\n}\n\nconst headers = lines[0].map(h => h.trim());\nconst records = [];\n\nfor (let i = 1; i < lines.length; i++) {\n  const values = lines[i];\n  if (values.length < headers.length) continue;\n  const obj = {};\n  for (let j = 0; j < headers.length; j++) {\n    const val = values[j] ? values[j].trim() : \"\";\n    // Cast numeric fields to integer\n    if (headers[j] === 'CityID' || headers[j] === 'CategoryID' || headers[j] === 'PriorityTier') {\n      obj[headers[j]] = parseInt(val, 10) || 0;\n    } else {\n      obj[headers[j]] = val;\n    }\n  }\n  records.push({ json: obj });\n}\n\nreturn records;"
+        "jsCode": "const items = $input.all();\nif (items.length === 0 || !items[0].json.data) {\n  return [];\n}\n\nconst csvText = items[0].json.data;\n\n// 1. Read checkpoint from Google Sheets\nlet completedSearchIDs = new Set();\ntry {\n  const checkpointRows = $('Read Checkpoint').all();\n  for (const row of checkpointRows) {\n    if (row.json && row.json.SearchID && row.json.Status === 'completed') {\n      completedSearchIDs.add(row.json.SearchID);\n    }\n  }\n  console.log(`Loaded ${completedSearchIDs.size} completed searches from checkpoint.`);\n} catch (e) {\n  console.log(\"No existing checkpoint found or failed to read checkpoint:\", e.message);\n}\n\n// Parse CSV manually\nconst lines = [];\nlet row = [\"\"];\nlet inQuotes = false;\n\nfor (let i = 0; i < csvText.length; i++) {\n  const c = csvText[i];\n  const next = csvText[i+1];\n  \n  if (c === '\"') {\n    if (inQuotes && next === '\"') {\n      row[row.length - 1] += '\"';\n      i++;\n    } else {\n      inQuotes = !inQuotes;\n    }\n  } else if (c === ',') {\n    if (inQuotes) {\n      row[row.length - 1] += c;\n    } else {\n      row.push(\"\");\n    }\n  } else if (c === '\\r' || c === '\\n') {\n    if (inQuotes) {\n      row[row.length - 1] += c;\n    } else {\n      if (c === '\\r' && next === '\\n') {\n        i++;\n      }\n      lines.push(row);\n      row = [\"\"];\n    }\n  } else {\n    row[row.length - 1] += c;\n  }\n}\nif (row.length > 1 || row[0] !== \"\") {\n  lines.push(row);\n}\n\nif (lines.length < 2) {\n  return [];\n}\n\nconst headers = lines[0].map(h => h.trim());\nconst allQueries = [];\n\nfor (let i = 1; i < lines.length; i++) {\n  const values = lines[i];\n  if (values.length < headers.length) continue;\n  const obj = {};\n  for (let j = 0; j < headers.length; j++) {\n    const val = values[j] ? values[j].trim() : \"\";\n    if (headers[j] === 'CityID' || headers[j] === 'CategoryID' || headers[j] === 'PriorityTier') {\n      obj[headers[j]] = parseInt(val, 10) || 0;\n    } else {\n      obj[headers[j]] = val;\n    }\n  }\n  allQueries.push(obj);\n}\n\n// 2. Filter out completed searches\nconst pendingQueries = allQueries.filter(q => !completedSearchIDs.has(q.SearchID));\nconst completedBefore = completedSearchIDs.size;\nconst totalQueries = allQueries.length;\n\n// 3. Get chunk size from config\nconst params = $('Parse, Consolidate & Validate').item.json.params;\nconst chunkSize = params?.batchControl?.chunkSize || 100;\n\nconst chunkQueries = pendingQueries.slice(0, chunkSize);\nconsole.log(`Total queries: ${totalQueries} | Completed before: ${completedBefore} | Pending: ${pendingQueries.length} | Chunk size: ${chunkSize} | Processing in this run: ${chunkQueries.length}`);\n\n// Inject state metadata\nreturn chunkQueries.map(q => {\n  return {\n    json: {\n      ...q,\n      completedBefore: completedBefore,\n      totalQueries: totalQueries,\n      chunkSize: chunkSize\n    }\n  };\n});"
       },
       "typeVersion": 2
     },
@@ -289,7 +289,7 @@
         -100
       ],
       "parameters": {
-        "jsCode": "const staticData = $getWorkflowStaticData('global');\n\n// Initialize Checkpoints & Dashboard\nstaticData.completed = staticData.completed || [];\nstaticData.failed = staticData.failed || [];\nstaticData.retryQueue = staticData.retryQueue || [];\nstaticData.creditsUsed = staticData.creditsUsed || 0;\nstaticData.businessesExported = staticData.businessesExported || 0;\nstaticData.emailsFound = staticData.emailsFound || 0;\nstaticData.phonesFound = staticData.phonesFound || 0;\nstaticData.startTime = staticData.startTime || new Date().toISOString();\n\nconst items = $input.all();\nconst validQueries = items.filter(i => i.json.SearchQuery && i.json.SearchQuery.trim() !== '');\nstaticData.totalSearches = validQueries.length;\n\n// Deduplicate retry queue and active pending\nconst pending = validQueries.filter(item => {\n  const sId = item.json.SearchID;\n  return !staticData.completed.includes(sId) && !staticData.failed.includes(sId);\n});\n\nstaticData.pendingSearches = pending.length;\n\n// Dynamic Batch Sizing Logic\nconst baseBatch = 10;\nconst successRate = staticData.totalSearches > 0 ? (staticData.completed.length / staticData.totalSearches) : 1;\nlet dynamicBatchSize = baseBatch;\n\nif (successRate > 0.9 && staticData.completed.length > 50) dynamicBatchSize = 20;\nif (successRate > 0.95 && staticData.completed.length > 200) dynamicBatchSize = 50;\nif (successRate < 0.7) dynamicBatchSize = 5; // Scale down on failures\n\nstaticData.currentBatchSize = dynamicBatchSize;\n\nconsole.log(`[DASHBOARD] Total: ${staticData.totalSearches} | Pending: ${pending.length} | Completed: ${staticData.completed.length} | Batch Size: ${dynamicBatchSize}`);\n\nreturn pending;"
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\n\n// Initialize Checkpoints & Dashboard\nstaticData.completed = staticData.completed || [];\nstaticData.failed = staticData.failed || [];\nstaticData.retryQueue = staticData.retryQueue || [];\nstaticData.creditsUsed = staticData.creditsUsed || 0;\nstaticData.businessesExported = staticData.businessesExported || 0;\nstaticData.emailsFound = staticData.emailsFound || 0;\nstaticData.phonesFound = staticData.phonesFound || 0;\nstaticData.startTime = staticData.startTime || new Date().toISOString();\n\nconst items = $input.all();\nconst validQueries = items.filter(i => i.json.SearchQuery && i.json.SearchQuery.trim() !== '');\n\nstaticData.completedBefore = items[0]?.json.completedBefore || 0;\nstaticData.totalQueries = items[0]?.json.totalQueries || 3874;\n\n// Deduplicate retry queue and active pending\nconst pending = validQueries.filter(item => {\n  const sId = item.json.SearchID;\n  return !staticData.completed.includes(sId) && !staticData.failed.includes(sId);\n});\n\nstaticData.pendingSearches = pending.length;\n\n// Dynamic Batch Sizing Logic\nconst baseBatch = 10;\nconst successRate = staticData.totalQueries > 0 ? ((staticData.completedBefore + staticData.completed.length) / staticData.totalQueries) : 1;\nlet dynamicBatchSize = baseBatch;\n\nif (successRate > 0.9 && (staticData.completedBefore + staticData.completed.length) > 50) dynamicBatchSize = 20;\nif (successRate > 0.95 && (staticData.completedBefore + staticData.completed.length) > 200) dynamicBatchSize = 50;\nif (successRate < 0.7) dynamicBatchSize = 5;\n\nstaticData.currentBatchSize = dynamicBatchSize;\n\nconsole.log(`[DASHBOARD] Total: ${staticData.totalQueries} | Completed before: ${staticData.completedBefore} | Pending in chunk: ${pending.length} | Chunk size: ${items.length} | Batch Size: ${dynamicBatchSize}`);\n\nreturn pending;"
       },
       "typeVersion": 2
     },
@@ -935,7 +935,7 @@
         -380
       ],
       "parameters": {
-        "jsCode": "const staticData = $getWorkflowStaticData('global');\nstaticData.completed = staticData.completed || [];\nconst searchId = $('Save Snapshot Context').first().json.SearchID;\n\nif (searchId && !staticData.completed.includes(searchId)) {\n  staticData.completed.push(searchId);\n}\n\n// Add to Estimated Credits Used (approx 0.005 per query)\nstaticData.creditsUsed += 0.005;\n\nconst total = staticData.totalSearches || 0;\nconst completed = staticData.completed.length;\nconst failed = staticData.failed?.length || 0;\nconst remaining = total - (completed + failed);\nconst successRate = total > 0 ? ((completed / total) * 100).toFixed(2) : 0;\nconst runTimeMs = new Date() - new Date(staticData.startTime);\nconst runTimeMin = (runTimeMs / 60000).toFixed(2);\n\nconsole.log(`[CHECKPOINT] SearchID: ${searchId} | Prog: ${completed}/${total} | Remaining: ${remaining} | Fail: ${failed} | SR: ${successRate}% | Time: ${runTimeMin}m | Exp: ${staticData.businessesExported} | Cost: $${staticData.creditsUsed.toFixed(3)}`);\n\n// Safe pause logic for credit guard\nif(staticData.creditsUsed > 48.0) {\n  console.warn(\"WARNING: Nearing daily budget limits. Please monitor execution.\");\n}\n\nreturn [{ json: { searchId, status: \"completed\" } }];"
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\nstaticData.completed = staticData.completed || [];\nconst searchId = $('Save Snapshot Context').first().json.SearchID;\n\nif (searchId && !staticData.completed.includes(searchId)) {\n  staticData.completed.push(searchId);\n}\n\n// Add to Estimated Credits Used (approx 0.005 per query)\nstaticData.creditsUsed += 0.005;\n\nconst total = staticData.totalQueries || 3874;\nconst completed = (staticData.completedBefore || 0) + staticData.completed.length;\nconst failed = staticData.failed?.length || 0;\nconst remaining = total - (completed + failed);\nconst successRate = total > 0 ? ((completed / total) * 100).toFixed(2) : 0;\nconst runTimeMs = new Date() - new Date(staticData.startTime);\nconst runTimeMin = (runTimeMs / 60000).toFixed(2);\n\nconsole.log(`[CHECKPOINT] SearchID: ${searchId} | Prog: ${completed}/${total} | Remaining: ${remaining} | Fail: ${failed} | SR: ${successRate}% | Time: ${runTimeMin}m | Exp: ${staticData.businessesExported} | Cost: $${staticData.creditsUsed.toFixed(3)}`);\n\nif(staticData.creditsUsed > 48.0) {\n  console.warn(\"WARNING: Nearing daily budget limits. Please monitor execution.\");\n}\n\nreturn [{\n  json: {\n    SearchID: searchId,\n    Status: \"completed\",\n    Timestamp: new Date().toISOString()\n  }\n}];"
       },
       "typeVersion": 2
     },
@@ -979,7 +979,7 @@
         60
       ],
       "parameters": {
-        "jsCode": "const staticData = $getWorkflowStaticData('global');\nstaticData.failed = staticData.failed || [];\nstaticData.retryQueue = staticData.retryQueue || [];\nconst searchId = $input.first().json.SearchID || $('Process in Batches').item.json.SearchID || 'unknown';\n\nif (searchId !== 'unknown' && !staticData.failed.includes(searchId)) {\n  staticData.failed.push(searchId);\n  // Push to retry queue to handle at the very end\n  staticData.retryQueue.push(searchId);\n}\nconsole.log(`[FAILED] Registered failure for SearchID: ${searchId}. Added to retry queue.`);\nreturn [{ json: { searchId, status: \"failed_queued\" } }];"
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\nstaticData.failed = staticData.failed || [];\nstaticData.retryQueue = staticData.retryQueue || [];\nconst searchId = $input.first().json.SearchID || $('Process in Batches').item.json.SearchID || 'unknown';\n\nif (searchId !== 'unknown' && !staticData.failed.includes(searchId)) {\n  staticData.failed.push(searchId);\n  staticData.retryQueue.push(searchId);\n}\nconsole.log(`[FAILED] Registered failure for SearchID: ${searchId}. Added to retry queue.`);\n\nreturn [{\n  json: {\n    SearchID: searchId,\n    Status: \"failed\",\n    Timestamp: new Date().toISOString()\n  }\n}];"
       },
       "typeVersion": 2
     },
@@ -992,7 +992,7 @@
         200
       ],
       "parameters": {
-        "jsCode": "const staticData = $getWorkflowStaticData('global');\n\nconst runTimeMs = new Date() - new Date(staticData.startTime);\nconst runTimeMin = (runTimeMs / 60000).toFixed(2);\n\nconst report = {\n  Execution_Summary: \"COMPLETE\",\n  Total_Searches: staticData.totalSearches || 0,\n  Completed: staticData.completed?.length || 0,\n  Failed_Permanent: staticData.failed?.length || 0,\n  Businesses_Exported: staticData.businessesExported || 0,\n  Emails_Found: staticData.emailsFound || 0,\n  Phone_Numbers_Found: staticData.phonesFound || 0,\n  Credits_Used_USD: staticData.creditsUsed ? staticData.creditsUsed.toFixed(3) : 0,\n  Execution_Time_Minutes: runTimeMin,\n  Retry_Queue_Size: staticData.retryQueue?.length || 0\n};\n\nconsole.log(\"FINAL REPORT GENERATED:\\n\", JSON.stringify(report, null, 2));\nreturn [{ json: report }];"
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\n\nconst runTimeMs = new Date() - new Date(staticData.startTime);\nconst runTimeMin = (runTimeMs / 60000).toFixed(2);\n\nconst totalCompleted = (staticData.completedBefore || 0) + (staticData.completed?.length || 0);\nconst totalQueries = staticData.totalQueries || 3874;\nconst isFinalConsolidation = totalCompleted >= totalQueries;\n\nconst report = {\n  Execution_Summary: isFinalConsolidation ? \"ALL_CHUNKS_COMPLETE\" : \"CHUNK_COMPLETE\",\n  Total_Searches: totalQueries,\n  Completed_Before: staticData.completedBefore || 0,\n  Completed_This_Run: staticData.completed?.length || 0,\n  Total_Completed: totalCompleted,\n  Failed_Permanent: staticData.failed?.length || 0,\n  Businesses_Exported: staticData.businessesExported || 0,\n  Emails_Found: staticData.emailsFound || 0,\n  Phone_Numbers_Found: staticData.phonesFound || 0,\n  Credits_Used_USD: staticData.creditsUsed ? staticData.creditsUsed.toFixed(3) : 0,\n  Execution_Time_Minutes: runTimeMin,\n  Retry_Queue_Size: staticData.retryQueue?.length || 0,\n  Is_Final_Consolidation: isFinalConsolidation\n};\n\nconsole.log(\"EXECUTION REPORT GENERATED:\\n\", JSON.stringify(report, null, 2));\nreturn [{ json: report }];"
       },
       "typeVersion": 2
     },
@@ -1042,6 +1042,237 @@
           "id": "googleDriveOAuth2Api",
           "name": "Google Drive OAuth2"
         }
+      }
+    },
+    {
+      "id": "node-read-checkpoint",
+      "name": "Read Checkpoint",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -50,
+        -100
+      ],
+      "parameters": {
+        "operation": "read",
+        "documentId": "={{ $env.GOOGLE_SHEET_ID }}",
+        "sheetName": "Pipeline Checkpoint",
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "googleSheetsOAuth2Api",
+          "name": "Google Sheets OAuth2"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "id": "node-write-checkpoint-success",
+      "name": "Write Checkpoint (Success)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        6120,
+        -380
+      ],
+      "parameters": {
+        "operation": "append",
+        "documentId": "={{ $env.GOOGLE_SHEET_ID }}",
+        "sheetName": "Pipeline Checkpoint",
+        "options": {},
+        "mappingMode": "autoMapInputData"
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "googleSheetsOAuth2Api",
+          "name": "Google Sheets OAuth2"
+        }
+      }
+    },
+    {
+      "id": "node-write-checkpoint-failure",
+      "name": "Write Checkpoint (Failure)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        2440,
+        60
+      ],
+      "parameters": {
+        "operation": "append",
+        "documentId": "={{ $env.GOOGLE_SHEET_ID }}",
+        "sheetName": "Pipeline Checkpoint",
+        "options": {},
+        "mappingMode": "autoMapInputData"
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "googleSheetsOAuth2Api",
+          "name": "Google Sheets OAuth2"
+        }
+      }
+    },
+    {
+      "id": "node-check-completion",
+      "name": "Check Completion Status",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        860,
+        200
+      ],
+      "parameters": {
+        "rules": {
+          "rules": [
+            {
+              "id": "comp1",
+              "leftValue": "={{ $json.Is_Final_Consolidation }}",
+              "operator": "isTrue"
+            }
+          ]
+        },
+        "fallbackOutput": 1
+      }
+    },
+    {
+      "id": "node-read-all-leads",
+      "name": "Read All Leads",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1060,
+        100
+      ],
+      "parameters": {
+        "operation": "read",
+        "documentId": "={{ $env.GOOGLE_SHEET_ID }}",
+        "sheetName": "={{ $env.GOOGLE_SHEET_TAB_NAME || 'MH Agri Leads' }}",
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "googleSheetsOAuth2Api",
+          "name": "Google Sheets OAuth2"
+        }
+      }
+    },
+    {
+      "id": "node-consolidate-dedupe",
+      "name": "Consolidate & Deduplicate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1260,
+        100
+      ],
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconsole.log(`Loaded ${items.length} raw leads from Google Sheets for consolidation.`);\n\n// Deduplicate leads by Company Name and Mobile NO\nconst seen = new Set();\nconst consolidated = [];\n\nfor (const item of items) {\n  const name = (item.json[\"Company Name\"] || \"\").trim().toLowerCase();\n  const phone = (item.json[\"Mobile NO\"] || \"\").trim();\n  const key = `${name}|${phone}`;\n  \n  if (key && !seen.has(key)) {\n    seen.add(key);\n    consolidated.push(item.json);\n  }\n}\n\nconsole.log(`Deduplication complete. Remaining leads: ${consolidated.length} (Removed ${items.length - consolidated.length} duplicates).`);\n\nreturn consolidated.map(lead => ({ json: lead }));"
+      }
+    },
+    {
+      "id": "node-write-excel-final",
+      "name": "Write Excel File Final",
+      "type": "n8n-nodes-base.spreadsheetFile",
+      "typeVersion": 2,
+      "position": [
+        1460,
+        0
+      ],
+      "parameters": {
+        "operation": "toFile",
+        "fileFormat": "xlsx",
+        "options": {}
+      }
+    },
+    {
+      "id": "node-write-csv-final",
+      "name": "Write CSV File Final",
+      "type": "n8n-nodes-base.spreadsheetFile",
+      "typeVersion": 2,
+      "position": [
+        1460,
+        200
+      ],
+      "parameters": {
+        "operation": "toFile",
+        "fileFormat": "csv",
+        "options": {}
+      }
+    },
+    {
+      "id": "node-upload-excel-final-drive",
+      "name": "Upload Excel Final to Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1660,
+        0
+      ],
+      "parameters": {
+        "operation": "upload",
+        "fileContent": "data",
+        "name": "={{ ($items('Parse, Consolidate & Validate')[0].json.constants?.outputFileNameTemplate || 'mh_agri_leads_{timestamp}.xlsx').replace('{timestamp}', new Date().toISOString().substring(0, 10)) + '_consolidated.xlsx' }}",
+        "parents": [
+          "={{ $env.GOOGLE_DRIVE_FOLDER_ID }}"
+        ]
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "googleDriveOAuth2Api",
+          "name": "Google Drive OAuth2"
+        }
+      }
+    },
+    {
+      "id": "node-upload-csv-final-drive",
+      "name": "Upload CSV Final to Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1660,
+        200
+      ],
+      "parameters": {
+        "operation": "upload",
+        "fileContent": "data",
+        "name": "={{ ($items('Parse, Consolidate & Validate')[0].json.constants?.outputFileNameTemplate || 'mh_agri_leads_{timestamp}.csv').replace('.xlsx', '.csv').replace('{timestamp}', new Date().toISOString().substring(0, 10)) + '_consolidated.csv' }}",
+        "parents": [
+          "={{ $env.GOOGLE_DRIVE_FOLDER_ID }}"
+        ]
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "googleDriveOAuth2Api",
+          "name": "Google Drive OAuth2"
+        }
+      }
+    },
+    {
+      "id": "node-merge-final-consolidation",
+      "name": "Merge Final Consolidation",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1860,
+        100
+      ],
+      "parameters": {
+        "mode": "passThrough",
+        "output": "input1"
+      }
+    },
+    {
+      "id": "node-final-production-report",
+      "name": "Final Production Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2060,
+        100
+      ],
+      "parameters": {
+        "jsCode": "const excelUpload = $('Upload Excel Final to Drive').first().json;\nconst csvUpload = $('Upload CSV Final to Drive').first().json;\n\nconst report = {\n  Consolidation_Status: \"COMPLETE\",\n  Excel_File_Name: excelUpload.name,\n  Excel_File_ID: excelUpload.id,\n  CSV_File_Name: csvUpload.name,\n  CSV_File_ID: csvUpload.id,\n  Consolidated_Leads_Count: $('Consolidate & Deduplicate').all().length,\n  Timestamp: new Date().toISOString(),\n  Message: \"All 3,874 searches have been successfully completed, consolidated, deduplicated, and uploaded to Google Drive.\"\n};\n\nconsole.log(\"FINAL CONSOLIDATION REPORT:\\n\", JSON.stringify(report, null, 2));\nreturn [{ json: report }];"
       }
     }
   ],
@@ -1215,7 +1446,7 @@
       "main": [
         [
           {
-            "node": "Parse Search Data",
+            "node": "Read Checkpoint",
             "type": "main",
             "index": 0
           }
@@ -1375,7 +1606,7 @@
       "main": [
         [
           {
-            "node": "Process in Batches",
+            "node": "Write Checkpoint (Failure)",
             "type": "main",
             "index": 0
           }
@@ -1612,7 +1843,7 @@
       "main": [
         [
           {
-            "node": "Process in Batches",
+            "node": "Write Checkpoint (Success)",
             "type": "main",
             "index": 0
           }
@@ -1635,6 +1866,144 @@
         [
           {
             "node": "Merge Output Completion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Parse Search Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Checkpoint (Success)": {
+      "main": [
+        [
+          {
+            "node": "Process in Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Checkpoint (Failure)": {
+      "main": [
+        [
+          {
+            "node": "Process in Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Final Execution Report": {
+      "main": [
+        [
+          {
+            "node": "Check Completion Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Completion Status": {
+      "main": [
+        [
+          {
+            "node": "Read All Leads",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Read All Leads": {
+      "main": [
+        [
+          {
+            "node": "Consolidate & Deduplicate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consolidate & Deduplicate": {
+      "main": [
+        [
+          {
+            "node": "Write Excel File Final",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Write CSV File Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Excel File Final": {
+      "main": [
+        [
+          {
+            "node": "Upload Excel Final to Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write CSV File Final": {
+      "main": [
+        [
+          {
+            "node": "Upload CSV Final to Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Excel Final to Drive": {
+      "main": [
+        [
+          {
+            "node": "Merge Final Consolidation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload CSV Final to Drive": {
+      "main": [
+        [
+          {
+            "node": "Merge Final Consolidation",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Final Consolidation": {
+      "main": [
+        [
+          {
+            "node": "Final Production Report",
             "type": "main",
             "index": 0
           }
