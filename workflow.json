@@ -1,443 +1,1659 @@
 {
-  "name": "Enterprise Cloud-Native Lead Pipeline",
+  "name": "MH Agri Leads — Upgraded Enterprise Pipeline",
   "nodes": [
     {
-      "id": "trigger-schedule",
+      "id": "node-schedule",
       "name": "Schedule Trigger",
       "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.2,
-      "position": [0, 0],
+      "position": [
+        -3000,
+        0
+      ],
       "parameters": {
-        "rule": { "interval": [{ "field": "cronExpression", "expression": "0 2 * * *" }] }
-      }
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 20 * * *"
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
     },
     {
-      "id": "trigger-manual",
-      "name": "Manual Trigger",
-      "type": "n8n-nodes-base.manualTrigger",
-      "typeVersion": 1,
-      "position": [0, 200],
-      "parameters": {}
+      "id": "node-form",
+      "name": "Form Submission Trigger",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        -3000,
+        -200
+      ],
+      "webhookId": "2dff254d-a8e3-4d27-9871-e9803e342d4e",
+      "parameters": {
+        "options": {},
+        "formTitle": "MH Agri Leads — Run Pipeline",
+        "formDescription": "Launch the fully configuration-driven enterprise workflow.",
+        "formFields": {
+          "values": []
+        }
+      },
+      "typeVersion": 2.2
     },
     {
-      "id": "merge-triggers",
+      "id": "node-merge-triggers",
       "name": "Merge Triggers",
       "type": "n8n-nodes-base.merge",
-      "typeVersion": 3,
-      "position": [240, 100],
-      "parameters": { "mode": "passThrough", "output": "input1" }
+      "position": [
+        -2800,
+        -100
+      ],
+      "parameters": {
+        "mode": "passThrough",
+        "output": "input1"
+      },
+      "typeVersion": 3
     },
     {
-      "id": "http-fetch-config",
-      "name": "Fetch Cloud Configurations",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [460, 100],
+      "id": "node-set-base-dir",
+      "name": "Set Config Base Dir",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -2600,
+        -100
+      ],
       "parameters": {
-        "method": "GET",
-        "url": "={{ $env.GITHUB_RAW_BASE_URL }}/workflow_constants.json",
-        "options": {
-          "retryOnFail": true,
-          "maxTries": 3
-        }
-      }
-    },
-    {
-      "id": "http-fetch-queries",
-      "name": "Fetch Search Queries",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [680, 100],
-      "parameters": {
-        "method": "GET",
-        "url": "={{ $env.GITHUB_RAW_BASE_URL }}/search_queries.json",
-        "options": { "retryOnFail": true }
-      }
-    },
-    {
-      "id": "gsheets-read-checkpoint",
-      "name": "Read State/Checkpoints",
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.6,
-      "position": [900, 100],
-      "parameters": {
-        "operation": "read",
-        "documentId": { "__rl": true, "value": "={{ $env.GOOGLE_SHEET_ID }}", "mode": "id" },
-        "sheetName": { "__rl": true, "value": "Checkpoints", "mode": "name" },
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "bd1",
+              "name": "baseDir",
+              "value": "={{ ($env.GITHUB_RAW_BASE_URL || $env.CONFIG_BASE_DIR || 'https://raw.githubusercontent.com/adityamistri605-commits/n8n-maharashtra-configuration/main/').replace(/\\/$/, '') + '/' }}",
+              "type": "string"
+            }
+          ]
+        },
         "options": {}
       },
-      "credentials": { "googleSheetsOAuth2Api": { "id": "", "name": "Google Sheets account" } }
+      "typeVersion": 3.4
     },
     {
-      "id": "code-queue-builder",
-      "name": "Enterprise Queue Builder",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1120, 100],
-      "parameters": {
-        "jsCode": "const queries = $('Fetch Search Queries').first().json;\nconst checkpoints = $('Read State/Checkpoints').all().map(i => i.json.SearchID);\n\n// Resume logic: Keep only un-processed queries\nconst pendingQueue = queries.filter(q => !checkpoints.includes(q.SearchID));\n\nif(pendingQueue.length === 0) {\n  console.log('All 3,874 queries successfully processed.');\n  return [];\n}\n\nreturn pendingQueue.map(q => ({ json: q }));"
-      }
-    },
-    {
-      "id": "loop-batches",
-      "name": "Queue Batch Processor",
-      "type": "n8n-nodes-base.loop",
-      "typeVersion": 1,
-      "position": [1360, 100],
-      "parameters": {
-        "batchSize": "={{ $env.BATCH_SIZE || 25 }}",
-        "options": {}
-      }
-    },
-    {
-      "id": "http-bd-trigger",
-      "name": "Bright Data Trigger",
+      "id": "node-read-constants",
+      "name": "Read Constants",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1600, -60],
+      "position": [
+        -2400,
+        -100
+      ],
       "parameters": {
+        "url": "={ $json.baseDir }workflow_constants.json",
+        "method": "GET",
+        "responseFormat": "json"
+      },
+      "continueOnFail": true,
+      "typeVersion": 4.2
+    },
+    {
+      "id": "node-read-settings",
+      "name": "Read Settings",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -2200,
+        -100
+      ],
+      "parameters": {
+        "url": "={ $json.baseDir }workflow_settings.json",
+        "method": "GET",
+        "responseFormat": "json"
+      },
+      "continueOnFail": true,
+      "typeVersion": 4.2
+    },
+    {
+      "id": "node-read-environment",
+      "name": "Read Environment",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -2000,
+        -100
+      ],
+      "parameters": {
+        "url": "={ $json.baseDir }environment.json",
+        "method": "GET",
+        "responseFormat": "json"
+      },
+      "continueOnFail": true,
+      "typeVersion": 4.2
+    },
+    {
+      "id": "node-read-schema",
+      "name": "Read Schema",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -1800,
+        -100
+      ],
+      "parameters": {
+        "url": "={ $json.baseDir }output_schema.json",
+        "method": "GET",
+        "responseFormat": "json"
+      },
+      "continueOnFail": true,
+      "typeVersion": 4.2
+    },
+    {
+      "id": "node-read-hunter-map",
+      "name": "Read Hunter Map",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -1600,
+        -100
+      ],
+      "parameters": {
+        "url": "={ $json.baseDir }hunter_mapping.json",
+        "method": "GET",
+        "responseFormat": "json"
+      },
+      "continueOnFail": true,
+      "typeVersion": 4.2
+    },
+    {
+      "id": "node-read-validation",
+      "name": "Read Validation",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -1400,
+        -100
+      ],
+      "parameters": {
+        "url": "={ $json.baseDir }validation_rules.json",
+        "method": "GET",
+        "responseFormat": "json"
+      },
+      "continueOnFail": true,
+      "typeVersion": 4.2
+    },
+    {
+      "id": "node-read-search-rules",
+      "name": "Read Search Rules",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -1200,
+        -100
+      ],
+      "parameters": {
+        "url": "={ $json.baseDir }search_rules.json",
+        "method": "GET",
+        "responseFormat": "json"
+      },
+      "continueOnFail": true,
+      "typeVersion": 4.2
+    },
+    {
+      "id": "node-read-search-params",
+      "name": "Read Search Params",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -1000,
+        -100
+      ],
+      "parameters": {
+        "url": "={ $json.baseDir }search_parameters.json",
+        "method": "GET",
+        "responseFormat": "json"
+      },
+      "continueOnFail": true,
+      "typeVersion": 4.2
+    },
+    {
+      "id": "node-read-output-map",
+      "name": "Read Output Map",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -800,
+        -100
+      ],
+      "parameters": {
+        "url": "={ $json.baseDir }output_mapping.json",
+        "method": "GET",
+        "responseFormat": "json"
+      },
+      "continueOnFail": true,
+      "typeVersion": 4.2
+    },
+    {
+      "id": "node-read-bd-map",
+      "name": "Read BrightData Map",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -600,
+        -100
+      ],
+      "parameters": {
+        "url": "={ $json.baseDir }brightdata_dataset_mapping.json",
+        "method": "GET",
+        "responseFormat": "json"
+      },
+      "continueOnFail": true,
+      "typeVersion": 4.2
+    },
+    {
+      "id": "node-parse-consolidate",
+      "name": "Parse, Consolidate & Validate",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -400,
+        -100
+      ],
+      "parameters": {
+        "jsCode": "const getObj = (nodeName) => {\n  try {\n    const data = $(nodeName).item.json;\n    if (typeof data === 'string') {\n      return JSON.parse(data);\n    }\n    return data;\n  } catch (e) {\n    return null;\n  }\n};\n\nconst constants = getObj(\"Read Constants\");\nconst settings = getObj(\"Read Settings\");\nconst env = getObj(\"Read Environment\");\nconst schema = getObj(\"Read Schema\");\nconst hunterMap = getObj(\"Read Hunter Map\");\nconst validation = getObj(\"Read Validation\");\nconst rules = getObj(\"Read Search Rules\");\nconst params = getObj(\"Read Search Params\");\nconst outputMap = getObj(\"Read Output Map\");\nconst brightData = getObj(\"Read BrightData Map\");\n\nconst required = {\n  file_constants: constants,\n  file_settings: settings,\n  file_env: env,\n  file_schema: schema,\n  file_hunter: hunterMap,\n  file_val: validation,\n  file_rules: rules,\n  file_params: params,\n  file_out: outputMap,\n  file_bd: brightData\n};\n\nconst missing = Object.keys(required).filter(k => required[k] === null || Object.keys(required[k]).length === 0);\n\nif (missing.length > 0) {\n  throw new Error(`CRITICAL: Missing or invalid configuration files: ${missing.join(', ')}`);\n}\n\nreturn [{\n  json: {\n    baseDir: $(\"Set Config Base Dir\").item.json.baseDir,\n    constants,\n    settings,\n    env,\n    schema,\n    hunterMap,\n    validation,\n    rules,\n    params,\n    outputMap,\n    brightData\n  }\n}];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "node-read-csv",
+      "name": "Read Search CSV",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -200,
+        -100
+      ],
+      "parameters": {
+        "url": "={{ $items('Parse, Consolidate & Validate')[0].json.baseDir }}search_queries.csv",
+        "method": "GET",
+        "responseFormat": "file",
+        "outputBinaryFieldName": "data"
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "node-parse-csv",
+      "name": "Parse Search Data",
+      "type": "n8n-nodes-base.spreadsheetFile",
+      "position": [
+        0,
+        -100
+      ],
+      "parameters": {
+        "operation": "read",
+        "binaryPropertyName": "data",
+        "options": {
+          "headerRow": true
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "node-resume-logic",
+      "name": "Dashboard & Batch Init",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        200,
+        -100
+      ],
+      "parameters": {
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\n\n// Initialize Checkpoints & Dashboard\nstaticData.completed = staticData.completed || [];\nstaticData.failed = staticData.failed || [];\nstaticData.retryQueue = staticData.retryQueue || [];\nstaticData.creditsUsed = staticData.creditsUsed || 0;\nstaticData.businessesExported = staticData.businessesExported || 0;\nstaticData.emailsFound = staticData.emailsFound || 0;\nstaticData.phonesFound = staticData.phonesFound || 0;\nstaticData.startTime = staticData.startTime || new Date().toISOString();\n\nconst items = $input.all();\nconst validQueries = items.filter(i => i.json.SearchQuery && i.json.SearchQuery.trim() !== '');\nstaticData.totalSearches = validQueries.length;\n\n// Deduplicate retry queue and active pending\nconst pending = validQueries.filter(item => {\n  const sId = item.json.SearchID;\n  return !staticData.completed.includes(sId) && !staticData.failed.includes(sId);\n});\n\nstaticData.pendingSearches = pending.length;\n\n// Dynamic Batch Sizing Logic\nconst baseBatch = 10;\nconst successRate = staticData.totalSearches > 0 ? (staticData.completed.length / staticData.totalSearches) : 1;\nlet dynamicBatchSize = baseBatch;\n\nif (successRate > 0.9 && staticData.completed.length > 50) dynamicBatchSize = 20;\nif (successRate > 0.95 && staticData.completed.length > 200) dynamicBatchSize = 50;\nif (successRate < 0.7) dynamicBatchSize = 5; // Scale down on failures\n\nstaticData.currentBatchSize = dynamicBatchSize;\n\nconsole.log(`[DASHBOARD] Total: ${staticData.totalSearches} | Pending: ${pending.length} | Completed: ${staticData.completed.length} | Batch Size: ${dynamicBatchSize}`);\n\nreturn pending;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "node-split-batches",
+      "name": "Process in Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        420,
+        -100
+      ],
+      "parameters": {
+        "batchSize": "={{ $getWorkflowStaticData('global').currentBatchSize || 10 }}",
+        "options": {}
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "node-bd-trigger",
+      "name": "Trigger BD Scrape",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        660,
+        -100
+      ],
+      "parameters": {
+        "url": "={{ $items('Parse, Consolidate & Validate')[0].json.brightData?.datasets?.googleMaps?.triggerEndpoint || 'https://api.brightdata.com/datasets/v3/trigger' }}",
         "method": "POST",
-        "url": "https://api.brightdata.com/datasets/v3/trigger",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Content-Type", "value": "application/json" },
-            { "name": "Authorization", "value": "Bearer {{$env.BRIGHTDATA_API_KEY}}" }
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
-            { "name": "dataset_id", "value": "={{ $env.DATASET_ID || 'gd_l7q7dkf244hwjntr0' }}" },
-            { "name": "include_errors", "value": "true" }
+            {
+              "name": "dataset_id",
+              "value": "={{ $items('Parse, Consolidate & Validate')[0].json.brightData?.datasets?.googleMaps?.datasetId || 'gd_l7q7dkf244hwjntr0' }}"
+            },
+            {
+              "name": "include_errors",
+              "value": "true"
+            }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "=[{ \"url\": \"https://www.google.com/maps/search/{{encodeURIComponent($json.SearchQuery)}}\", \"country\": \"IN\", \"limit\": 20 }]",
+        "jsonBody": "=[\n  {\n    \"url\": \"https://www.google.com/maps/search/{{ encodeURIComponent($json.SearchQuery) }}\",\n    \"country\": \"{{ $items('Parse, Consolidate & Validate')[0].json.params?.geography?.countryCode || 'IN' }}\",\n    \"limit\": {{ $items('Parse, Consolidate & Validate')[0].json.params?.collection?.maxBusinessesPerSearch || 20 }}\n  }\n]",
         "options": {
           "retryOnFail": true,
-          "maxTries": "={{ $env.MAX_RETRIES || 5 }}",
-          "waitBetweenTries": "={{ $env.POLL_INTERVAL || 5000 }}"
+          "maxTries": 5,
+          "waitBetweenTries": 5000
         }
-      }
-    },
-    {
-      "id": "set-poll-array",
-      "name": "Initialize Polling",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [1840, -60],
-      "parameters": {
-        "assignments": {
-          "assignments": [
-            { "id": "p1", "name": "snapshot_id", "value": "={{ $json.snapshot_id }}", "type": "string" },
-            { "id": "p2", "name": "SearchID", "value": "={{ $('Queue Batch Processor').item.json.SearchID }}", "type": "string" }
-          ]
-        },
-        "options": {}
-      }
-    },
-    {
-      "id": "wait-polling",
-      "name": "Exponential Backoff Wait",
-      "type": "n8n-nodes-base.wait",
-      "typeVersion": 1.1,
-      "position": [2060, -60],
-      "parameters": {
-        "resume": "afterTime",
-        "amount": 15,
-        "unit": "seconds"
-      }
-    },
-    {
-      "id": "http-bd-status",
-      "name": "Check Dataset Status",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [2280, -60],
-      "parameters": {
-        "method": "GET",
-        "url": "=https://api.brightdata.com/datasets/v3/progress/{{$json.snapshot_id}}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "Authorization", "value": "Bearer {{$env.BRIGHTDATA_API_KEY}}" }
-          ]
-        },
-        "options": {}
-      }
-    },
-    {
-      "id": "if-ready",
-      "name": "Is Snapshot Ready?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [2500, -60],
-      "parameters": {
-        "conditions": {
-          "options": { "caseSensitive": true },
-          "combinator": "and",
-          "conditions": [{ "operator": { "name": "filter.operator.equals", "type": "string", "operation": "equals" }, "leftValue": "={{$json.status}}", "rightValue": "ready" }]
-        }
-      }
-    },
-    {
-      "id": "http-bd-download",
-      "name": "Download Snapshot",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [2760, -200],
-      "parameters": {
-        "method": "GET",
-        "url": "=https://api.brightdata.com/datasets/v3/snapshot/{{$('Initialize Polling').item.json.snapshot_id}}",
-        "sendQuery": true,
-        "queryParameters": { "parameters": [{ "name": "format", "value": "json" }] },
-        "sendHeaders": true,
-        "headerParameters": { "parameters": [{ "name": "Authorization", "value": "Bearer {{$env.BRIGHTDATA_API_KEY}}" }] },
-        "options": {
-          "retryOnFail": true,
-          "maxTries": "={{ $env.MAX_RETRIES || 5 }}"
-        }
-      }
-    },
-    {
-      "id": "code-validate-score",
-      "name": "Validation & Lead Scoring",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [3000, -200],
-      "parameters": {
-        "jsCode": "const items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n    const d = item.json;\n    const name = (d.name || \"\").trim();\n    if (!name) continue; // Never fabricate data\n\n    let phone = (d.phone || \"\").replace(/[^0-9+]/g, '');\n    if (phone && !phone.match(/^(?:(?:\\+|0{0,2})91(\\s*[\\-]\\s*)?|[0]?)?[6789]\\d{9}$/)) phone = \"\";\n\n    let pincode = \"\";\n    const address = (d.address || \"\").trim();\n    const pinMatch = address.match(/\\b\\d{6}\\b/);\n    if (pinMatch) pincode = pinMatch[0];\n\n    let email = (d.email || \"\").trim().toLowerCase();\n    if (email && !email.match(/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/)) email = \"\";\n\n    let website = (d.website || d.url || \"\").trim();\n    if (website && !website.startsWith('http')) website = 'https://' + website;\n\n    // Weighted Scoring\n    let score = 0;\n    if (name) score += 20;\n    if (phone) score += 25;\n    if (website) score += 20;\n    if (email) score += 20;\n    if (pincode) score += 5;\n    if (address) score += 5;\n\n    results.push({\n        json: {\n            \"Company Name\": name,\n            \"Pincode\": pincode,\n            \"Category\": d.category || \"Agricultural Machinery\",\n            \"Location\": d.city || \"Maharashtra\",\n            \"Mobile No\": phone,\n            \"Email\": email,\n            \"Website\": website,\n            \"Address\": address,\n            \"Lead Score\": Math.min(score, 100),\n            \"Data Source\": \"Bright Data Maps\"\n        }\n    });\n}\nreturn results;"
-      }
-    },
-    {
-      "id": "if-hunter-eligibility",
-      "name": "Hunter.io Eligible?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [3240, -200],
-      "parameters": {
-        "conditions": {
-          "options": { "caseSensitive": true },
-          "combinator": "and",
-          "conditions": [
-            { "operator": { "name": "filter.operator.notEmpty", "type": "string", "operation": "notEmpty" }, "leftValue": "={{$json.Website}}" },
-            { "operator": { "name": "filter.operator.empty", "type": "string", "operation": "empty" }, "leftValue": "={{$json.Email}}" },
-            { "operator": { "name": "filter.operator.greaterThanOrEqual", "type": "number", "operation": "gte" }, "leftValue": "={{$json['Lead Score']}}", "rightValue": 50 }
-          ]
-        }
-      }
-    },
-    {
-      "id": "http-hunter",
-      "name": "Hunter Domain Search",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [3500, -320],
-      "parameters": {
-        "method": "GET",
-        "url": "https://api.hunter.io/v2/domain-search",
-        "sendQuery": true,
-        "queryParameters": {
-          "parameters": [
-            { "name": "domain", "value": "={{$json.Website.replace(/^https?:\\/\\//, '').split('/')[0]}}" },
-            { "name": "type", "value": "professional" },
-            { "name": "api_key", "value": "={{$env.HUNTER_API_KEY}}" }
-          ]
-        },
-        "options": { "retryOnFail": true, "maxTries": 3 }
       },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YOUR_BRIGHTDATA_CRED_ID",
+          "name": "Bright Data API"
+        }
+      },
+      "typeVersion": 4.2,
       "continueOnFail": true
     },
     {
-      "id": "code-process-hunter",
-      "name": "Process Hunter Data",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [3740, -320],
+      "id": "node-check-trigger-error",
+      "name": "Check Trigger Error",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        880,
+        -100
+      ],
       "parameters": {
-        "jsCode": "const items = $input.all();\nconst originalItems = $('Hunter.io Eligible?').all(0, 0);\n\nreturn items.map((item, index) => {\n    const lead = originalItems[index].json;\n    const hData = item.json.data;\n    \n    if (hData && hData.emails && hData.emails.length > 0) {\n        const best = hData.emails.find(e => ['valid', 'accept_all'].includes(e.verification?.status)) || hData.emails[0];\n        if (best && best.value) {\n            lead.Email = best.value;\n            lead['Lead Score'] = Math.min(lead['Lead Score'] + 5, 100);\n            lead['Data Source'] = \"Bright Data + Hunter.io\";\n        }\n    }\n    return { json: lead };\n});"
-      }
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "name": "filter.operator.exists",
+                "type": "string",
+                "operation": "exists"
+              },
+              "leftValue": "={{ $json.snapshot_id }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
     },
     {
-      "id": "merge-results",
-      "name": "Merge Processed Records",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3,
-      "position": [3980, -200],
-      "parameters": { "mode": "passThrough", "output": "input1" }
-    },
-    {
-      "id": "code-dedup",
-      "name": "Batch Deduplication",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [4200, -200],
+      "id": "node-log-failed-trigger",
+      "name": "Queue Failed Trigger",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1100,
+        100
+      ],
       "parameters": {
-        "jsCode": "const items = $input.all();\nconst unique = new Map();\n\nfor (const item of items) {\n    const d = item.json;\n    const key = (d[\"Company Name\"] + \"|\" + d[\"Website\"]).toLowerCase();\n    \n    if (!unique.has(key) || d['Lead Score'] > unique.get(key).json['Lead Score']) {\n        unique.set(key, { json: d });\n    }\n}\nreturn Array.from(unique.values());"
-      }
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "lft1",
+              "name": "SearchID",
+              "value": "={{ $('Process in Batches').item.json.SearchID }}",
+              "type": "string"
+            },
+            {
+              "id": "lft2",
+              "name": "Error",
+              "value": "Trigger Failed (429/Timeout)",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 3.4
     },
     {
-      "id": "switch-export",
-      "name": "Cloud Export Router",
+      "id": "node-save-context",
+      "name": "Save Snapshot Context",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1100,
+        -220
+      ],
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ssc1",
+              "name": "snapshot_id",
+              "value": "={{ $json.snapshot_id }}",
+              "type": "string"
+            },
+            {
+              "id": "ssc2",
+              "name": "SearchID",
+              "value": "={{ $('Process in Batches').item.json.SearchID }}",
+              "type": "string"
+            },
+            {
+              "id": "ssc3",
+              "name": "Category",
+              "value": "={{ $('Process in Batches').item.json.Category }}",
+              "type": "string"
+            },
+            {
+              "id": "ssc4",
+              "name": "Location",
+              "value": "={{ $('Process in Batches').item.json.Location }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "node-wait-polling",
+      "name": "Wait For Data",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        1320,
+        -220
+      ],
+      "parameters": {
+        "amount": "={{ Math.max(($items('Parse, Consolidate & Validate')[0].json.params?.batchControl?.delayBetweenRequestsMs || 5000) / 1000, 5) }}"
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "node-check-progress",
+      "name": "Check Scrape Progress",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1540,
+        -220
+      ],
+      "parameters": {
+        "url": "={{ ($items('Parse, Consolidate & Validate')[0].json.brightData?.datasets?.googleMaps?.progressEndpoint || 'https://api.brightdata.com/datasets/v3/progress/{{snapshotId}}').replace('{{snapshotId}}', $json.snapshot_id) }}",
+        "method": "GET",
+        "sendHeaders": true,
+        "options": {
+          "retryOnFail": true,
+          "maxTries": 5,
+          "waitBetweenTries": 5000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YOUR_BRIGHTDATA_CRED_ID",
+          "name": "Bright Data API"
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "node-is-ready-switch",
+      "name": "Is Scrape Ready?",
       "type": "n8n-nodes-base.switch",
-      "typeVersion": 3,
-      "position": [4440, -200],
+      "position": [
+        1760,
+        -220
+      ],
       "parameters": {
         "rules": {
           "rules": [
-            { "id": "e1", "leftValue": "={{ $env.OUTPUT_FORMAT || 'google_sheets' }}", "rightValue": "google_sheets", "operator": "equal" },
-            { "id": "e2", "leftValue": "={{ $env.OUTPUT_FORMAT }}", "rightValue": "excel", "operator": "equal" }
+            {
+              "id": "ir1",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "ready",
+              "operator": "equal"
+            },
+            {
+              "id": "ir2",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "running",
+              "operator": "equal"
+            },
+            {
+              "id": "ir3",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "failed",
+              "operator": "equal"
+            }
+          ]
+        },
+        "fallbackOutput": 1
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "node-fetch-results",
+      "name": "Fetch Scraped Results",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2000,
+        -380
+      ],
+      "parameters": {
+        "url": "={{ ($items('Parse, Consolidate & Validate')[0].json.brightData?.datasets?.googleMaps?.snapshotEndpoint || 'https://api.brightdata.com/datasets/v3/snapshot/{{snapshotId}}').replace('{{snapshotId}}', $('Save Snapshot Context').item.json.snapshot_id) }}",
+        "method": "GET",
+        "sendHeaders": true,
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "format",
+              "value": "json"
+            }
+          ]
+        },
+        "options": {
+          "retryOnFail": true,
+          "maxTries": 5,
+          "waitBetweenTries": 5000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YOUR_BRIGHTDATA_CRED_ID",
+          "name": "Bright Data API"
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "node-parse-validate",
+      "name": "Parse & Validate",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2240,
+        -380
+      ],
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst ctx = $('Save Snapshot Context').first().json;\nconst configs = $items('Parse, Consolidate & Validate')[0].json;\nconst rules = configs.rules || {};\nconst validation = configs.validation || {};\n\nconst blockedDomains = rules.resultFiltering?.skipIfWebsiteContains || ['justdial','indiamart','tradeindia','facebook','instagram','linkedin','twitter','youtube','sulekha'];\nconst indianMobileRegex = validation.phoneValidation?.regexPatterns?.indianMobile ? new RegExp(validation.phoneValidation.regexPatterns.indianMobile) : /^[6-9]\\d{9}$/;\nconst pincodeRegex = validation.phoneValidation?.regexPatterns?.pincode ? new RegExp(validation.phoneValidation.regexPatterns.pincode) : /\\b[1-9][0-9]{5}\\b/;\n\nfunction isBlockedWebsite(url) {\n  if (!url) return false;\n  const u = url.toLowerCase();\n  return blockedDomains.some(b => u.includes(b));\n}\nfunction prefixHttps(url) {\n  if (!url) return '';\n  return url.startsWith('http') ? url : 'https://' + url;\n}\n\nconst output = [];\nfor (const item of items) {\n  const d = item.json;\n  const name = (d.name || '').trim();\n  if (!name || name.length < 3) continue;\n\n  const website = isBlockedWebsite(d.open_website || d.website) ? '' : prefixHttps(d.open_website || d.website || '');\n  \n  let rawPhone = String(d.phone_number || d.phone || '').replace(/[\\s\\-().+]/g, '');\n  if (rawPhone.startsWith('91') && rawPhone.length === 12) rawPhone = rawPhone.slice(2);\n  if (rawPhone.startsWith('0') && rawPhone.length === 11) rawPhone = rawPhone.slice(1);\n  const phone = indianMobileRegex.test(rawPhone) ? rawPhone : '';\n\n  const address = (d.address || '').trim();\n  const pincodeMatch = address.match(pincodeRegex);\n  const pincode = pincodeMatch ? pincodeMatch[0] : '';\n\n  output.push({\n    json: {\n      searchId: ctx.SearchID,\n      category: ctx.Category,\n      cityName: ctx.Location,\n      businessName: name,\n      pincode: pincode,\n      primaryPhone: phone,\n      website: website,\n      address: address,\n      rating: d.rating || '',\n      reviewsCount: d.reviews_count || '',\n      googleMapsUrl: d.url || '',\n      primaryEmail: ''\n    }\n  });\n}\nreturn output;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "node-website-exists",
+      "name": "Website Exists?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2480,
+        -380
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "name": "filter.operator.notEmpty",
+                "type": "string",
+                "operation": "notEmpty"
+              },
+              "leftValue": "={{ $json.website }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "node-scrape-website",
+      "name": "Advanced Website Extractor",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2720,
+        -500
+      ],
+      "parameters": {
+        "url": "={{ $json.website }}",
+        "method": "GET",
+        "options": {
+          "allowUnauthorizedCerts": true,
+          "timeout": 20000,
+          "retryOnFail": true,
+          "maxTries": 3,
+          "waitBetweenTries": 5000,
+          "proxy": "http://{{ $env.BRIGHTDATA_USERNAME }}:{{ $env.BRIGHTDATA_PASSWORD }}@{{ $items('Parse, Consolidate & Validate')[0].json.brightData?.zones?.webUnlocker?.proxyHost || 'brd.superproxy.io' }}:{{ $items('Parse, Consolidate & Validate')[0].json.brightData?.zones?.webUnlocker?.proxyPort || 22225 }}"
+        }
+      },
+      "continueOnFail": true,
+      "typeVersion": 4.2
+    },
+    {
+      "id": "node-extract-contact",
+      "name": "Extract Deep Contact Info",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2960,
+        -500
+      ],
+      "parameters": {
+        "jsCode": "const items = $input.all();\n// Robust Regex for Deep Extraction\nconst emailRegex = /[a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\\.[a-zA-Z0-9_-]+/gi;\nconst telRegex = /href=[\"']tel:([^\"]+)[\"']/gi;\nconst mailtoRegex = /href=[\"']mailto:([^\"]+)[\"']/gi;\nconst phoneRegex = /(?:\\+?91|0)?[ -]?(?:[6-9][0-9]{9})/g;\nconst gstRegex = /\\d{2}[A-Z]{5}\\d{4}[A-Z]{1}[A-Z\\d]{1}[Z]{1}[A-Z\\d]{1}/gi;\n\nreturn items.map(item => {\n  const html = typeof item.json.data === 'string' ? item.json.data : '';\n  let emails = new Set();\n  let phones = new Set();\n  let gstins = new Set();\n  \n  if (html) {\n    // Extract Mailto\n    const mMailto = [...html.matchAll(mailtoRegex)];\n    mMailto.forEach(m => emails.add(m[1].split('?')[0].trim().toLowerCase()));\n    \n    // Extract Body Emails (Filter out images)\n    const mEmails = html.match(emailRegex) || [];\n    mEmails.forEach(e => {\n      const el = e.toLowerCase();\n      if(!el.endsWith('.png') && !el.endsWith('.jpg') && !el.endsWith('.gif') && !el.endsWith('.jpeg') && !el.endsWith('.webp') && !el.includes('sentry') && !el.includes('wix')) {\n        emails.add(el);\n      }\n    });\n    \n    // Extract Tel Links\n    const mTel = [...html.matchAll(telRegex)];\n    mTel.forEach(m => {\n      const cleaned = m[1].replace(/[^\\d]/g, '');\n      if (cleaned.length >= 10) phones.add(cleaned.slice(-10));\n    });\n    \n    // Extract Body Phones\n    const mPhones = html.match(phoneRegex) || [];\n    mPhones.forEach(p => {\n      const cleaned = p.replace(/[^\\d]/g, '');\n      if (cleaned.length === 10 || (cleaned.length === 12 && cleaned.startsWith('91'))) {\n        phones.add(cleaned.length === 12 ? cleaned.substring(2) : cleaned);\n      }\n    });\n\n    // Extract GST\n    const mGst = html.match(gstRegex) || [];\n    mGst.forEach(g => gstins.add(g.toUpperCase()));\n  }\n  \n  const out = { ...item.json };\n  delete out.data; // Memory optimization: drop heavy HTML payload\n  \n  const emailArr = Array.from(emails);\n  const phoneArr = Array.from(phones);\n  \n  // Prioritize professional emails over generic if multiple exist (info, sales, admin)\n  let bestEmail = emailArr[0];\n  for (let e of emailArr) {\n    if (e.includes('sales@') || e.includes('purchase@') || e.includes('director@')) bestEmail = e;\n  }\n\n  if (!out.primaryEmail && bestEmail) out.primaryEmail = bestEmail;\n  if (!out.primaryPhone && phoneArr.length > 0) out.primaryPhone = phoneArr[0];\n  if (gstins.size > 0) out.gstNumber = Array.from(gstins)[0];\n  \n  return { json: out };\n});"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "node-merge-website",
+      "name": "Merge Extracted",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        3200,
+        -380
+      ],
+      "parameters": {
+        "mode": "passThrough",
+        "output": "input1"
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "node-compute-score",
+      "name": "Compute Enterprise Score",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3440,
+        -380
+      ],
+      "parameters": {
+        "jsCode": "const items = $input.all();\nreturn items.map(item => {\n  const d = item.json;\n  let score = 0;\n  let breakdown = {};\n\n  if (d.businessName) { score += 15; breakdown.name = 15; }\n  if (d.primaryPhone) { score += 20; breakdown.phone = 20; }\n  if (d.website) {\n    score += 15;\n    breakdown.website = 15;\n    if (d.website.startsWith('https')) { score += 5; breakdown.https = 5; }\n  }\n  if (d.address) { score += 10; breakdown.address = 10; }\n  if (d.pincode) { score += 5; breakdown.pincode = 5; }\n  if (d.rating && parseFloat(d.rating) >= 4.0) { score += 5; breakdown.rating = 5; }\n  if (d.reviewsCount && parseInt(d.reviewsCount) >= 10) { score += 5; breakdown.reviews = 5; }\n  if (d.primaryEmail) { score += 15; breakdown.email = 15; }\n  if (d.gstNumber) { score += 5; breakdown.gst = 5; }\n\n  d.leadScore = Math.min(score, 100);\n  d.scoreBreakdown = breakdown;\n\n  return { json: d };\n});"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "node-should-hunter",
+      "name": "Enrich with Hunter?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3680,
+        -380
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "name": "filter.operator.equals",
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $items('Parse, Consolidate & Validate')[0].json.params?.verification?.useHunter !== false }}",
+              "rightValue": true
+            },
+            {
+              "operator": {
+                "name": "filter.operator.notEmpty",
+                "type": "string",
+                "operation": "notEmpty"
+              },
+              "leftValue": "={{ $json.website }}"
+            },
+            {
+              "operator": {
+                "name": "filter.operator.empty",
+                "type": "string",
+                "operation": "empty"
+              },
+              "leftValue": "={{ $json.primaryEmail }}"
+            },
+            {
+              "operator": {
+                "name": "filter.operator.greaterThanOrEqual",
+                "type": "number",
+                "operation": "gte"
+              },
+              "leftValue": "={{ $json.leadScore }}",
+              "rightValue": "={{ $items('Parse, Consolidate & Validate')[0].json.params?.verification?.minLeadScoreToRunHunter || 50 }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "node-hunter-api",
+      "name": "Hunter API Advanced Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        3920,
+        -480
+      ],
+      "parameters": {
+        "url": "https://api.hunter.io/v2/domain-search",
+        "method": "GET",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "domain",
+              "value": "={{ $json.website.replace(/^https?:\\/\\//, '').split('/')[0] }}"
+            },
+            {
+              "name": "limit",
+              "value": "10"
+            },
+            {
+              "name": "type",
+              "value": "professional"
+            },
+            {
+              "name": "api_key",
+              "value": "={{ $env.HUNTER_API_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "retryOnFail": true,
+          "maxTries": 3,
+          "waitBetweenTries": 3000
+        }
+      },
+      "continueOnFail": true,
+      "typeVersion": 4.2
+    },
+    {
+      "id": "node-map-hunter",
+      "name": "Map Highest Confidence Hunter",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        4160,
+        -480
+      ],
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst originalLeads = $('Enrich with Hunter?').all(0, 0);\n\nreturn items.map((item, i) => {\n  const lead = originalLeads[i] ? { ...originalLeads[i].json } : { ...item.json };\n  const d = item.json;\n  \n  if (!lead.primaryEmail && d.data && d.data.emails && d.data.emails.length > 0) {\n    // Rank based on confidence and verification status\n    const sortedEmails = d.data.emails.sort((a, b) => (b.confidence || 0) - (a.confidence || 0));\n    const best = sortedEmails.find(e => ['valid', 'accept_all'].includes(e.verification?.status)) || sortedEmails[0];\n    \n    if (best && best.value) {\n      lead.primaryEmail = (best.value || '').toLowerCase();\n      lead.hunterConfidence = best.confidence;\n      lead.leadScore = Math.min(lead.leadScore + 10, 100); // Bump score for found email\n    }\n  }\n  return { json: lead };\n});"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "node-merge-hunter",
+      "name": "Merge Hunter Flow",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        4400,
+        -380
+      ],
+      "parameters": {
+        "mode": "passThrough",
+        "output": "input1"
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "node-deduplicate",
+      "name": "Deduplicate Enterprise",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        4640,
+        -380
+      ],
+      "parameters": {
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\nif (!staticData.seenBusinesses) staticData.seenBusinesses = {};\n\nconst items = $input.all();\nconst unique = [];\n\nfor (const item of items) {\n  const d = item.json;\n  const mapsUrl = (d.googleMapsUrl || '').trim().toLowerCase();\n  const website = (d.website || '').trim().toLowerCase();\n  const phone = (d.primaryPhone || '').trim();\n  const name = (d.businessName || '').trim().toLowerCase();\n  const address = (d.address || '').trim().toLowerCase();\n  \n  // Robust enterprise deduplication hierarchy\n  const key = mapsUrl || website || phone || (name + '|' + address);\n  if (!key || key === '|') continue;\n\n  if (staticData.seenBusinesses[key]) {\n    if ((d.leadScore || 0) > (staticData.seenBusinesses[key].leadScore || 0)) {\n      staticData.seenBusinesses[key] = { leadScore: d.leadScore };\n      const idx = unique.findIndex(u => u.json._dedupKey === key);\n      if (idx !== -1) unique.splice(idx, 1, { json: { ...d, _dedupKey: key } });\n      else unique.push({ json: { ...d, _dedupKey: key } });\n    }\n  } else {\n    staticData.seenBusinesses[key] = { leadScore: d.leadScore || 0 };\n    unique.push({ json: { ...d, _dedupKey: key } });\n    \n    // Dashboard Analytics Updator\n    if(d.primaryEmail) staticData.emailsFound++;\n    if(d.primaryPhone) staticData.phonesFound++;\n    staticData.businessesExported++;\n  }\n}\n\nreturn unique.map(u => {\n  const j = { ...u.json };\n  delete j._dedupKey;\n  delete j.scoreBreakdown; // Strip heavy objects before export\n  return { json: j };\n});"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "node-build-output",
+      "name": "Format Export Payload",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        4880,
+        -380
+      ],
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst configs = $items('Parse, Consolidate & Validate')[0].json;\nconst outMapping = configs.outputMap || {};\nconst columnsConfig = outMapping.columns || [];\nif (columnsConfig.length > 0) columnsConfig.sort((a,b) => a.order - b.order);\n\nreturn items.map(item => {\n  const d = item.json;\n  const out = {};\n  if (columnsConfig.length > 0) {\n    columnsConfig.forEach(c => {\n      out[c.header] = d[c.internalField] || d[c.header] || \"\";\n    });\n  } else {\n    out[\"Company Name\"] = d.businessName || \"\";\n    out[\"Pincode\"] = d.pincode || \"\";\n    out[\"Category\"] = d.category || \"\";\n    out[\"Location\"] = d.cityName || \"\";\n    out[\"Mobile NO\"] = d.primaryPhone || \"\";\n    out[\"Email\"] = d.primaryEmail || \"\";\n    out[\"Website\"] = d.website || \"\";\n    out[\"Address\"] = d.address || \"\";\n    // Added GST based on new extraction\n    if(d.gstNumber) out[\"GST Number\"] = d.gstNumber;\n  }\n  return { json: out };\n});"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "node-output-switch",
+      "name": "Output Destination Router",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        5120,
+        -380
+      ],
+      "parameters": {
+        "rules": {
+          "rules": [
+            {
+              "id": "or1",
+              "leftValue": "={{ $items('Parse, Consolidate & Validate')[0].json.settings?.outputDestination || 'google_sheets' }}",
+              "rightValue": "google_sheets",
+              "operator": "equal"
+            },
+            {
+              "id": "or2",
+              "leftValue": "={{ $items('Parse, Consolidate & Validate')[0].json.settings?.outputDestination || 'google_sheets' }}",
+              "rightValue": "excel",
+              "operator": "equal"
+            },
+            {
+              "id": "or3",
+              "leftValue": "={{ $items('Parse, Consolidate & Validate')[0].json.settings?.outputDestination || 'google_sheets' }}",
+              "rightValue": "csv",
+              "operator": "equal"
+            }
           ]
         },
         "fallbackOutput": 0
-      }
+      },
+      "typeVersion": 3
     },
     {
-      "id": "gsheets-append-leads",
-      "name": "Append to Master Sheet",
+      "id": "node-append-sheets",
+      "name": "Append Google Sheets",
       "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.6,
-      "position": [4720, -320],
+      "position": [
+        5400,
+        -500
+      ],
       "parameters": {
         "operation": "append",
-        "documentId": { "__rl": true, "value": "={{ $env.GOOGLE_SHEET_ID }}", "mode": "id" },
-        "sheetName": { "__rl": true, "value": "Leads", "mode": "name" },
+        "sheetName": "={{ $env.GOOGLE_SHEET_TAB_NAME || 'MH Agri Leads' }}",
+        "documentId": "={{ $env.GOOGLE_SHEET_ID }}",
         "options": {},
         "mappingMode": "autoMapInputData"
       },
-      "credentials": { "googleSheetsOAuth2Api": { "id": "", "name": "Google Sheets account" } }
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets OAuth2"
+        }
+      },
+      "typeVersion": 4.6
     },
     {
-      "id": "convert-excel",
-      "name": "Format as Excel",
+      "id": "node-write-excel",
+      "name": "Write Excel File",
       "type": "n8n-nodes-base.spreadsheetFile",
-      "typeVersion": 2,
-      "position": [4720, -100],
-      "parameters": { "operation": "toFile", "fileFormat": "xlsx", "options": {} }
+      "position": [
+        5400,
+        -320
+      ],
+      "parameters": {
+        "operation": "toFile",
+        "fileFormat": "xlsx",
+        "options": {}
+      },
+      "typeVersion": 2
     },
     {
-      "id": "gdrive-upload",
-      "name": "Upload to Google Drive",
+      "id": "node-write-csv",
+      "name": "Write CSV File",
+      "type": "n8n-nodes-base.spreadsheetFile",
+      "position": [
+        5400,
+        -140
+      ],
+      "parameters": {
+        "operation": "toFile",
+        "fileFormat": "csv",
+        "options": {}
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "node-merge-output",
+      "name": "Merge Output Completion",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        5680,
+        -380
+      ],
+      "parameters": {
+        "mode": "passThrough",
+        "output": "input1"
+      },
+      "typeVersion": 3
+    },
+    {
+      "id": "node-log-success",
+      "name": "Dashboard Update & Checkpoint",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        5920,
+        -380
+      ],
+      "parameters": {
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\nstaticData.completed = staticData.completed || [];\nconst searchId = $('Save Snapshot Context').first().json.SearchID;\n\nif (searchId && !staticData.completed.includes(searchId)) {\n  staticData.completed.push(searchId);\n}\n\n// Add to Estimated Credits Used (approx 0.005 per query)\nstaticData.creditsUsed += 0.005;\n\nconst total = staticData.totalSearches || 0;\nconst completed = staticData.completed.length;\nconst failed = staticData.failed?.length || 0;\nconst remaining = total - (completed + failed);\nconst successRate = total > 0 ? ((completed / total) * 100).toFixed(2) : 0;\nconst runTimeMs = new Date() - new Date(staticData.startTime);\nconst runTimeMin = (runTimeMs / 60000).toFixed(2);\n\nconsole.log(`[CHECKPOINT] SearchID: ${searchId} | Prog: ${completed}/${total} | Remaining: ${remaining} | Fail: ${failed} | SR: ${successRate}% | Time: ${runTimeMin}m | Exp: ${staticData.businessesExported} | Cost: $${staticData.creditsUsed.toFixed(3)}`);\n\n// Safe pause logic for credit guard\nif(staticData.creditsUsed > 48.0) {\n  console.warn(\"WARNING: Nearing daily budget limits. Please monitor execution.\");\n}\n\nreturn [{ json: { searchId, status: \"completed\" } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "node-log-failed-search",
+      "name": "Queue Failed Scrape",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        2000,
+        0
+      ],
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "lfs1",
+              "name": "SearchID",
+              "value": "={{ $('Save Snapshot Context').item.json.SearchID }}",
+              "type": "string"
+            },
+            {
+              "id": "lfs2",
+              "name": "Error",
+              "value": "Scrape Failed in Bright Data",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "node-failed-mark-processed",
+      "name": "Register Failed Search (Retry Queue)",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2240,
+        60
+      ],
+      "parameters": {
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\nstaticData.failed = staticData.failed || [];\nstaticData.retryQueue = staticData.retryQueue || [];\nconst searchId = $input.first().json.SearchID || $('Process in Batches').item.json.SearchID || 'unknown';\n\nif (searchId !== 'unknown' && !staticData.failed.includes(searchId)) {\n  staticData.failed.push(searchId);\n  // Push to retry queue to handle at the very end\n  staticData.retryQueue.push(searchId);\n}\nconsole.log(`[FAILED] Registered failure for SearchID: ${searchId}. Added to retry queue.`);\nreturn [{ json: { searchId, status: \"failed_queued\" } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "node-final-report",
+      "name": "Final Execution Report",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        660,
+        200
+      ],
+      "parameters": {
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\n\nconst runTimeMs = new Date() - new Date(staticData.startTime);\nconst runTimeMin = (runTimeMs / 60000).toFixed(2);\n\nconst report = {\n  Execution_Summary: \"COMPLETE\",\n  Total_Searches: staticData.totalSearches || 0,\n  Completed: staticData.completed?.length || 0,\n  Failed_Permanent: staticData.failed?.length || 0,\n  Businesses_Exported: staticData.businessesExported || 0,\n  Emails_Found: staticData.emailsFound || 0,\n  Phone_Numbers_Found: staticData.phonesFound || 0,\n  Credits_Used_USD: staticData.creditsUsed ? staticData.creditsUsed.toFixed(3) : 0,\n  Execution_Time_Minutes: runTimeMin,\n  Retry_Queue_Size: staticData.retryQueue?.length || 0\n};\n\nconsole.log(\"FINAL REPORT GENERATED:\\n\", JSON.stringify(report, null, 2));\nreturn [{ json: report }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "node-upload-excel-drive",
+      "name": "Upload Excel to Drive",
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
-      "position": [4960, -100],
+      "position": [
+        5650,
+        -320
+      ],
       "parameters": {
         "operation": "upload",
         "fileContent": "data",
-        "fileName": "=mh_agri_leads_{{$now.toFormat('yyyyMMdd_HHmmss')}}.xlsx",
-        "options": {
-          "folderId": "={{ $env.GOOGLE_DRIVE_FOLDER_ID }}"
-        }
+        "name": "={{ ($items('Parse, Consolidate & Validate')[0].json.constants?.outputFileNameTemplate || 'mh_agri_leads_{timestamp}.xlsx').replace('{timestamp}', new Date().toISOString().replace(/[:.]/g, '-')) }}",
+        "parents": [
+          "={{ $env.GOOGLE_DRIVE_FOLDER_ID }}"
+        ]
       },
-      "credentials": { "googleDriveOAuth2Api": { "id": "", "name": "Google Drive account" } }
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_GOOGLE_DRIVE_CREDENTIAL_ID",
+          "name": "Google Drive OAuth2"
+        }
+      }
     },
     {
-      "id": "gsheets-checkpoint",
-      "name": "Commit State Checkpoint",
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.6,
-      "position": [5200, -200],
+      "id": "node-upload-csv-drive",
+      "name": "Upload CSV to Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        5650,
+        -140
+      ],
       "parameters": {
-        "operation": "append",
-        "documentId": { "__rl": true, "value": "={{ $env.GOOGLE_SHEET_ID }}", "mode": "id" },
-        "sheetName": { "__rl": true, "value": "Checkpoints", "mode": "name" },
-        "options": {},
-        "mappingMode": "defineBelow",
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "SearchID": "={{ $('Initialize Polling').item.json.SearchID }}",
-            "SnapshotID": "={{ $('Initialize Polling').item.json.snapshot_id }}",
-            "Status": "Completed",
-            "Timestamp": "={{ $now.toISO() }}"
-          }
-        }
+        "operation": "upload",
+        "fileContent": "data",
+        "name": "={{ ($items('Parse, Consolidate & Validate')[0].json.constants?.outputFileNameTemplate || 'mh_agri_leads_{timestamp}.csv').replace('.xlsx', '.csv').replace('{timestamp}', new Date().toISOString().replace(/[:.]/g, '-')) }}",
+        "parents": [
+          "={{ $env.GOOGLE_DRIVE_FOLDER_ID }}"
+        ]
       },
-      "credentials": { "googleSheetsOAuth2Api": { "id": "", "name": "Google Sheets account" } }
-    },
-    {
-      "id": "loop-end",
-      "name": "Return to Batch Queue",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
-      "position": [5440, -200],
-      "parameters": {}
-    },
-    {
-      "id": "gsheets-log-error",
-      "name": "Log Retry / Error State",
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.6,
-      "position": [2760, 100],
-      "parameters": {
-        "operation": "append",
-        "documentId": { "__rl": true, "value": "={{ $env.GOOGLE_SHEET_ID }}", "mode": "id" },
-        "sheetName": { "__rl": true, "value": "Logs", "mode": "name" },
-        "options": {},
-        "mappingMode": "defineBelow",
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "SearchID": "={{ $('Initialize Polling').item.json.SearchID }}",
-            "Error": "Polling Timeout or Rate Limit",
-            "Timestamp": "={{ $now.toISO() }}"
-          }
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_GOOGLE_DRIVE_CREDENTIAL_ID",
+          "name": "Google Drive OAuth2"
         }
-      },
-      "credentials": { "googleSheetsOAuth2Api": { "id": "", "name": "Google Sheets account" } }
+      }
     }
   ],
   "connections": {
-    "Schedule Trigger": { "main": [ [ { "node": "Merge Triggers", "type": "main", "index": 0 } ] ] },
-    "Manual Trigger": { "main": [ [ { "node": "Merge Triggers", "type": "main", "index": 0 } ] ] },
-    "Merge Triggers": { "main": [ [ { "node": "Fetch Cloud Configurations", "type": "main", "index": 0 } ] ] },
-    "Fetch Cloud Configurations": { "main": [ [ { "node": "Fetch Search Queries", "type": "main", "index": 0 } ] ] },
-    "Fetch Search Queries": { "main": [ [ { "node": "Read State/Checkpoints", "type": "main", "index": 0 } ] ] },
-    "Read State/Checkpoints": { "main": [ [ { "node": "Enterprise Queue Builder", "type": "main", "index": 0 } ] ] },
-    "Enterprise Queue Builder": { "main": [ [ { "node": "Queue Batch Processor", "type": "main", "index": 0 } ] ] },
-    "Queue Batch Processor": { "main": [ [ { "node": "Bright Data Trigger", "type": "main", "index": 0 } ] ] },
-    "Bright Data Trigger": { "main": [ [ { "node": "Initialize Polling", "type": "main", "index": 0 } ] ] },
-    "Initialize Polling": { "main": [ [ { "node": "Exponential Backoff Wait", "type": "main", "index": 0 } ] ] },
-    "Exponential Backoff Wait": { "main": [ [ { "node": "Check Dataset Status", "type": "main", "index": 0 } ] ] },
-    "Check Dataset Status": { "main": [ [ { "node": "Is Snapshot Ready?", "type": "main", "index": 0 } ] ] },
-    "Is Snapshot Ready?": {
+    "Schedule Trigger": {
       "main": [
-        [ { "node": "Download Snapshot", "type": "main", "index": 0 } ],
-        [ { "node": "Log Retry / Error State", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Merge Triggers",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Log Retry / Error State": { "main": [ [ { "node": "Exponential Backoff Wait", "type": "main", "index": 0 } ] ] },
-    "Download Snapshot": { "main": [ [ { "node": "Validation & Lead Scoring", "type": "main", "index": 0 } ] ] },
-    "Validation & Lead Scoring": { "main": [ [ { "node": "Hunter.io Eligible?", "type": "main", "index": 0 } ] ] },
-    "Hunter.io Eligible?": {
+    "Form Submission Trigger": {
       "main": [
-        [ { "node": "Hunter Domain Search", "type": "main", "index": 0 } ],
-        [ { "node": "Merge Processed Records", "type": "main", "index": 1 } ]
+        [
+          {
+            "node": "Merge Triggers",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Hunter Domain Search": { "main": [ [ { "node": "Process Hunter Data", "type": "main", "index": 0 } ] ] },
-    "Process Hunter Data": { "main": [ [ { "node": "Merge Processed Records", "type": "main", "index": 0 } ] ] },
-    "Merge Processed Records": { "main": [ [ { "node": "Batch Deduplication", "type": "main", "index": 0 } ] ] },
-    "Batch Deduplication": { "main": [ [ { "node": "Cloud Export Router", "type": "main", "index": 0 } ] ] },
-    "Cloud Export Router": {
+    "Merge Triggers": {
       "main": [
-        [ { "node": "Append to Master Sheet", "type": "main", "index": 0 } ],
-        [ { "node": "Format as Excel", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Set Config Base Dir",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Format as Excel": { "main": [ [ { "node": "Upload to Google Drive", "type": "main", "index": 0 } ] ] },
-    "Upload to Google Drive": { "main": [ [ { "node": "Commit State Checkpoint", "type": "main", "index": 0 } ] ] },
-    "Append to Master Sheet": { "main": [ [ { "node": "Commit State Checkpoint", "type": "main", "index": 0 } ] ] },
-    "Commit State Checkpoint": { "main": [ [ { "node": "Return to Batch Queue", "type": "main", "index": 0 } ] ] },
-    "Return to Batch Queue": { "main": [ [ { "node": "Queue Batch Processor", "type": "main", "index": 0 } ] ] }
+    "Set Config Base Dir": {
+      "main": [
+        [
+          {
+            "node": "Read Constants",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Constants": {
+      "main": [
+        [
+          {
+            "node": "Read Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Settings": {
+      "main": [
+        [
+          {
+            "node": "Read Environment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Environment": {
+      "main": [
+        [
+          {
+            "node": "Read Schema",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Schema": {
+      "main": [
+        [
+          {
+            "node": "Read Hunter Map",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Hunter Map": {
+      "main": [
+        [
+          {
+            "node": "Read Validation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Validation": {
+      "main": [
+        [
+          {
+            "node": "Read Search Rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Search Rules": {
+      "main": [
+        [
+          {
+            "node": "Read Search Params",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Search Params": {
+      "main": [
+        [
+          {
+            "node": "Read Output Map",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Output Map": {
+      "main": [
+        [
+          {
+            "node": "Read BrightData Map",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read BrightData Map": {
+      "main": [
+        [
+          {
+            "node": "Parse, Consolidate & Validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse, Consolidate & Validate": {
+      "main": [
+        [
+          {
+            "node": "Read Search CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Search CSV": {
+      "main": [
+        [
+          {
+            "node": "Parse Search Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Search Data": {
+      "main": [
+        [
+          {
+            "node": "Dashboard & Batch Init",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dashboard & Batch Init": {
+      "main": [
+        [
+          {
+            "node": "Process in Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process in Batches": {
+      "main": [
+        [
+          {
+            "node": "Trigger BD Scrape",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Final Execution Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger BD Scrape": {
+      "main": [
+        [
+          {
+            "node": "Check Trigger Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Trigger Error": {
+      "main": [
+        [
+          {
+            "node": "Save Snapshot Context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Queue Failed Trigger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Queue Failed Trigger": {
+      "main": [
+        [
+          {
+            "node": "Register Failed Search (Retry Queue)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Snapshot Context": {
+      "main": [
+        [
+          {
+            "node": "Wait For Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait For Data": {
+      "main": [
+        [
+          {
+            "node": "Check Scrape Progress",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Scrape Progress": {
+      "main": [
+        [
+          {
+            "node": "Is Scrape Ready?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Scrape Ready?": {
+      "main": [
+        [
+          {
+            "node": "Fetch Scraped Results",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait For Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Queue Failed Scrape",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Queue Failed Scrape": {
+      "main": [
+        [
+          {
+            "node": "Register Failed Search (Retry Queue)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Register Failed Search (Retry Queue)": {
+      "main": [
+        [
+          {
+            "node": "Process in Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Scraped Results": {
+      "main": [
+        [
+          {
+            "node": "Parse & Validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse & Validate": {
+      "main": [
+        [
+          {
+            "node": "Website Exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Website Exists?": {
+      "main": [
+        [
+          {
+            "node": "Advanced Website Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Extracted",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Advanced Website Extractor": {
+      "main": [
+        [
+          {
+            "node": "Extract Deep Contact Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Deep Contact Info": {
+      "main": [
+        [
+          {
+            "node": "Merge Extracted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Extracted": {
+      "main": [
+        [
+          {
+            "node": "Compute Enterprise Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Enterprise Score": {
+      "main": [
+        [
+          {
+            "node": "Enrich with Hunter?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrich with Hunter?": {
+      "main": [
+        [
+          {
+            "node": "Hunter API Advanced Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Hunter Flow",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Hunter API Advanced Request": {
+      "main": [
+        [
+          {
+            "node": "Map Highest Confidence Hunter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map Highest Confidence Hunter": {
+      "main": [
+        [
+          {
+            "node": "Merge Hunter Flow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Hunter Flow": {
+      "main": [
+        [
+          {
+            "node": "Deduplicate Enterprise",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deduplicate Enterprise": {
+      "main": [
+        [
+          {
+            "node": "Format Export Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Export Payload": {
+      "main": [
+        [
+          {
+            "node": "Output Destination Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Output Destination Router": {
+      "main": [
+        [
+          {
+            "node": "Append Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Write Excel File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Write CSV File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Merge Output Completion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Excel File": {
+      "main": [
+        [
+          {
+            "node": "Upload Excel to Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write CSV File": {
+      "main": [
+        [
+          {
+            "node": "Upload CSV to Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Output Completion": {
+      "main": [
+        [
+          {
+            "node": "Dashboard Update & Checkpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dashboard Update & Checkpoint": {
+      "main": [
+        [
+          {
+            "node": "Process in Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Excel to Drive": {
+      "main": [
+        [
+          {
+            "node": "Merge Output Completion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload CSV to Drive": {
+      "main": [
+        [
+          {
+            "node": "Merge Output Completion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
   "settings": {
     "executionOrder": "v1",
     "timezone": "Asia/Kolkata",
     "saveExecutionProgress": true,
     "saveManualExecutions": true,
-    "callerPolicy": "workflowsFromSameOwner"
-  }
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "active": true
 }

@@ -1,18 +1,46 @@
 {
   "metadata": {
-    "version": "2.0.0",
-    "format": "dynamic"
+    "version": "1.0.0",
+    "encoding": "UTF-8",
+    "description": "Runtime parameters governing how each search query is executed. Read by the workflow before every query batch."
   },
-  "columns": [
-    "Company Name",
-    "Pincode",
-    "Category",
-    "Location",
-    "Mobile No",
-    "Email",
-    "Website",
-    "Address",
-    "Lead Score",
-    "Data Source"
-  ]
+  "geography": {
+    "state": "Maharashtra",
+    "stateCode": "MH",
+    "country": "India",
+    "countryCode": "IN"
+  },
+  "collection": {
+    "source": "Google Maps",
+    "maxBusinessesPerSearch": 20,
+    "resultsPerPage": 10,
+    "maxPagesPerQuery": 2,
+    "language": "en",
+    "deviceType": "desktop"
+  },
+  "verification": {
+    "verifyWebsite": true,
+    "verifyEmail": true,
+    "verifyPhone": true,
+    "useHunter": true,
+    "skipVerificationIfDataMissing": true
+  },
+  "outputBehaviour": {
+    "leaveBlankIfMissing": true,
+    "neverFabricateData": true,
+    "outputFormat": "Excel",
+    "encoding": "UTF-8-BOM",
+    "includeHeaderRow": true
+  },
+  "batchControl": {
+    "queriesPerBatch": 10,
+    "delayBetweenRequestsMs": 500,
+    "delayBetweenBatchesMs": 1000,
+    "maxConcurrentRequests": 1
+  },
+  "costControl": {
+    "dailyBudgetUsd": 50,
+    "haltIfBudgetExceeded": true,
+    "estimatedCostPerQueryUsd": 0.005
+  }
 }

@@ -1,21 +1,131 @@
 {
   "metadata": {
-    "version": "2.0.0",
-    "description": "Cloud runtime execution parameters."
+    "version": "1.0.0",
+    "encoding": "UTF-8",
+    "totalColumns": 8,
+    "outputFormat": "Excel",
+    "description": "Maps every export column in the final output file to its internal pipeline field name, data source, and transformation rules. The workflow reads this file to know which fields to include, in what order, and how to populate them."
   },
-  "collection": {
-    "source": "Google Maps",
-    "maxBusinessesPerSearch": 20,
-    "language": "en"
+  "outputFile": {
+    "format": "Excel",
+    "extension": ".xlsx",
+    "encodingNote": "Excel files are written in UTF-8-BOM so that special characters render correctly when opened in Microsoft Excel on Windows.",
+    "fileNameTemplate": "mh_agri_leads_{{timestamp}}.xlsx",
+    "headerRowBold": true,
+    "headerFillColor": "1F6B35",
+    "headerFontColor": "FFFFFF",
+    "freezeHeaderRow": true,
+    "autoFilter": true
   },
-  "verification": {
-    "requireWebsite": false,
-    "useHunter": true,
-    "leaveBlankIfMissing": true
-  },
-  "batchControl": {
-    "defaultQueriesPerBatch": 25,
-    "exponentialBackoffBaseMs": 5000,
-    "maxRetries": 5
+  "columns": [
+    {
+      "order": 1,
+      "header": "Company Name",
+      "internalField": "businessName",
+      "dataSource": "Google Maps scrape via Bright Data",
+      "type": "string",
+      "nullable": false,
+      "leaveBlankIfMissing": true,
+      "transform": "trim",
+      "description": "Trading or registered name of the business as it appears on Google Maps.",
+      "excelColumnWidth": 35
+    },
+    {
+      "order": 2,
+      "header": "Pincode",
+      "internalField": "pincode",
+      "dataSource": "Google Maps address field, parsed by validation stage",
+      "type": "string",
+      "nullable": true,
+      "leaveBlankIfMissing": true,
+      "transform": "extractSixDigitPin",
+      "validationRule": "maharashtraPincodeRegex",
+      "description": "6-digit Indian postal code extracted from the scraped address. Must match Maharashtra pincode ranges defined in validation_rules.json.",
+      "excelColumnWidth": 12
+    },
+    {
+      "order": 3,
+      "header": "Category",
+      "internalField": "category",
+      "dataSource": "search_queries.json — the category label used to find this business",
+      "type": "string",
+      "nullable": false,
+      "leaveBlankIfMissing": false,
+      "transform": "none",
+      "description": "The search category label from categories.json that was used in the query that returned this business.",
+      "excelColumnWidth": 40
+    },
+    {
+      "order": 4,
+      "header": "Location",
+      "internalField": "city",
+      "dataSource": "search_queries.json — the city used in the search query",
+      "type": "string",
+      "nullable": false,
+      "leaveBlankIfMissing": false,
+      "transform": "none",
+      "description": "The Maharashtra city from cities.json that was used in the query that returned this business.",
+      "excelColumnWidth": 20
+    },
+    {
+      "order": 5,
+      "header": "Mobile NO",
+      "internalField": "primaryPhone",
+      "dataSource": "Google Maps scrape, normalised by phone validation stage",
+      "type": "string",
+      "nullable": true,
+      "leaveBlankIfMissing": true,
+      "transform": "normaliseIndianPhone",
+      "validationRule": "indianMobileRegex",
+      "description": "Best validated 10-digit Indian mobile number. Normalised by stripping country code, spaces, and dashes per phone validation rules in validation_rules.json.",
+      "excelColumnWidth": 18
+    },
+    {
+      "order": 6,
+      "header": "Email",
+      "internalField": "primaryEmail",
+      "dataSource": "Website scraping or Hunter.io enrichment",
+      "type": "string",
+      "nullable": true,
+      "leaveBlankIfMissing": true,
+      "transform": "lowercase",
+      "validationRule": "emailRegex",
+      "description": "Best deliverable email address. Sourced first from website scraping, then from Hunter.io if no email was found during scraping. Left blank if no verified email is available.",
+      "excelColumnWidth": 30
+    },
+    {
+      "order": 7,
+      "header": "Website",
+      "internalField": "website",
+      "dataSource": "Google Maps scrape or Hunter.io domain field",
+      "type": "string",
+      "nullable": true,
+      "leaveBlankIfMissing": true,
+      "transform": "prefixHttpsIfMissing",
+      "validationRule": "websiteProtocolCheck",
+      "description": "Business website URL. Sourced from the Google Maps listing. If absent from Maps, the Hunter.io domain field is used as a fallback. Directory URLs (JustDial, IndiaMart, etc.) are excluded per the skip-list in validation_rules.json.",
+      "excelColumnWidth": 30
+    },
+    {
+      "order": 8,
+      "header": "Address",
+      "internalField": "address",
+      "dataSource": "Google Maps scrape via Bright Data",
+      "type": "string",
+      "nullable": true,
+      "leaveBlankIfMissing": true,
+      "transform": "trim",
+      "description": "Full street address as returned by Google Maps. No normalisation is applied beyond whitespace trimming. Left blank if not available on the listing.",
+      "excelColumnWidth": 45
+    }
+  ],
+  "populationRules": {
+    "leaveBlankIfMissing": true,
+    "neverFabricateData": true,
+    "neverInventAddresses": true,
+    "neverInventPhones": true,
+    "neverInventEmails": true,
+    "neverInventWebsites": true,
+    "note": "All values must come from Bright Data scraping or Hunter.io enrichment. If a field cannot be sourced, it is left blank."
   }
 }

@@ -1,0 +1,105 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "encoding": "UTF-8",
+    "country": "India",
+    "state": "Maharashtra"
+  },
+  "phoneValidation": {
+    "enabled": true,
+    "regexPatterns": {
+      "indianMobile": "^(?:\\+91|0091|91)?[\\s-]?[6-9]\\d{9}$",
+      "indianLandline": "^(?:\\+91|0091|91)?[\\s-]?0?[1-9]\\d{1,4}[\\s-]?\\d{6,8}$",
+      "extractFromText": "(?:(?:\\+91|0091|91)?[\\s-]?)?(?:\\(?0?[6-9]\\d{1,4}\\)?[\\s-]?)?[6-9]\\d{9}"
+    },
+    "normalization": {
+      "stripCountryCode": true,
+      "removeSpaces": true,
+      "removeDashes": true,
+      "removeParentheses": true,
+      "targetLength": 10
+    },
+    "invalidPrefixes": ["0000000000", "1111111111", "9999999999"],
+    "maxPhonesPerLead": 3
+  },
+  "emailValidation": {
+    "enabled": true,
+    "regexPattern": "^[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}$",
+    "blockedDomains": [
+      "example.com", "test.com", "domain.com", "email.com",
+      "mailinator.com", "guerrillamail.com", "tempmail.com",
+      "yopmail.com", "sharklasers.com", "throwam.com"
+    ],
+    "preferredDomainTypes": ["company", "business"],
+    "deprioritizedDomains": ["gmail.com", "yahoo.com", "yahoo.in", "hotmail.com", "outlook.com", "rediffmail.com"],
+    "maxEmailsPerLead": 3,
+    "hunterVerificationEnabled": true,
+    "hunterMinScore": 70
+  },
+  "websiteValidation": {
+    "enabled": true,
+    "validProtocols": ["http", "https"],
+    "skipDomains": [
+      "facebook.com", "instagram.com", "twitter.com", "youtube.com",
+      "linkedin.com", "justdial.com", "indiamart.com", "tradeindia.com",
+      "sulekha.com", "yellowpages.in", "commonfloor.com"
+    ],
+    "maxRedirects": 5,
+    "timeoutMs": 20000
+  },
+  "pincodeValidation": {
+    "enabled": true,
+    "regexPattern": "^[1-9][0-9]{5}$",
+    "maharashtraRanges": [
+      { "start": 400001, "end": 400107, "region": "Mumbai City" },
+      { "start": 401001, "end": 401610, "region": "Mumbai Suburban / Thane" },
+      { "start": 410001, "end": 415729, "region": "Konkan" },
+      { "start": 416001, "end": 416626, "region": "Kolhapur / Sangli" },
+      { "start": 421001, "end": 425524, "region": "Nashik / Dhule / Nandurbar" },
+      { "start": 430001, "end": 444905, "region": "Vidarbha" },
+      { "start": 431001, "end": 431811, "region": "Marathwada" }
+    ]
+  },
+  "deduplication": {
+    "enabled": true,
+    "strategy": "cascading",
+    "keyPriority": [
+      { "order": 1, "key": "normalizedPhone", "description": "10-digit Indian phone number" },
+      { "order": 2, "key": "emailDomain",     "description": "Stripped business website domain" },
+      { "order": 3, "key": "businessNameCity","description": "Lowercased name + city fallback" }
+    ],
+    "mergeStrategy": "keepHighestScore",
+    "caseSensitive": false,
+    "normalizeBusinessName": true,
+    "nameNormalizationRules": [
+      "lowercase",
+      "strip punctuation",
+      "collapse whitespace",
+      "remove suffixes: pvt ltd, private limited, llp, inc, corp, co"
+    ]
+  },
+  "leadScoring": {
+    "enabled": true,
+    "maxScore": 100,
+    "fields": [
+      { "field": "businessName",    "points": 10, "condition": "notEmpty" },
+      { "field": "phone",           "points": 20, "condition": "validIndianPhone" },
+      { "field": "email",           "points": 20, "condition": "validEmail" },
+      { "field": "website",         "points": 15, "condition": "notEmpty" },
+      { "field": "address",         "points": 10, "condition": "notEmpty" },
+      { "field": "pincode",         "points": 5,  "condition": "validMaharashtraPin" },
+      { "field": "rating",          "points": 5,  "condition": "greaterThanOrEqual:4.0" },
+      { "field": "reviewCount",     "points": 5,  "condition": "greaterThan:10" },
+      { "field": "source",          "points": 10, "condition": "equals:google_maps" },
+      { "field": "hunterVerified",  "points": 10, "condition": "equals:true" },
+      { "field": "websiteScraped",  "points": 5,  "condition": "equals:true" }
+    ],
+    "tiers": [
+      { "tier": "hot",    "minScore": 80, "label": "Hot Lead",    "color": "#FF4444" },
+      { "tier": "warm",   "minScore": 55, "label": "Warm Lead",   "color": "#FF8800" },
+      { "tier": "cold",   "minScore": 30, "label": "Cold Lead",   "color": "#4488FF" },
+      { "tier": "discard","minScore": 0,  "label": "Discard",     "color": "#AAAAAA" }
+    ],
+    "minimumScoreToExport": 20
+  }
+}

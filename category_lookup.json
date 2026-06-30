@@ -1,0 +1,210 @@
+{
+  "1": {
+    "id": 1,
+    "slug": "agricultural-machinery-exporters-list",
+    "label": "agricultural machinery exporters list",
+    "intent": "exporters",
+    "tradeDirection": "export",
+    "priorityTier": 1
+  },
+  "2": {
+    "id": 2,
+    "slug": "agricultural-equipment-manufacturers-list",
+    "label": "agricultural equipment manufacturers list",
+    "intent": "manufacturers",
+    "tradeDirection": "domestic",
+    "priorityTier": 1
+  },
+  "3": {
+    "id": 3,
+    "slug": "farm-equipment-dealers-directory",
+    "label": "farm equipment dealers directory",
+    "intent": "dealers",
+    "tradeDirection": "domestic",
+    "priorityTier": 2
+  },
+  "4": {
+    "id": 4,
+    "slug": "agricultural-machinery-importer-database",
+    "label": "agricultural machinery importer database",
+    "intent": "importers",
+    "tradeDirection": "import",
+    "priorityTier": 1
+  },
+  "5": {
+    "id": 5,
+    "slug": "agricultural-equipment-buyer-list",
+    "label": "agricultural equipment buyer list",
+    "intent": "buyers",
+    "tradeDirection": "import",
+    "priorityTier": 1
+  },
+  "6": {
+    "id": 6,
+    "slug": "authorized-tractor-dealer",
+    "label": "authorized tractor dealer",
+    "intent": "dealers",
+    "tradeDirection": "domestic",
+    "priorityTier": 2
+  },
+  "7": {
+    "id": 7,
+    "slug": "farm-machinery-exporter-india",
+    "label": "farm machinery exporter India",
+    "intent": "exporters",
+    "tradeDirection": "export",
+    "priorityTier": 1
+  },
+  "8": {
+    "id": 8,
+    "slug": "agricultural-machinery-import-export-company",
+    "label": "agricultural machinery import export company",
+    "intent": "traders",
+    "tradeDirection": "both",
+    "priorityTier": 1
+  },
+  "9": {
+    "id": 9,
+    "slug": "agricultural-equipment-tender-supplier",
+    "label": "agricultural equipment tender supplier",
+    "intent": "suppliers",
+    "tradeDirection": "domestic",
+    "priorityTier": 2
+  },
+  "10": {
+    "id": 10,
+    "slug": "oem-agricultural-machinery-manufacturer",
+    "label": "OEM agricultural machinery manufacturer",
+    "intent": "manufacturers",
+    "tradeDirection": "domestic",
+    "priorityTier": 1
+  },
+  "11": {
+    "id": 11,
+    "slug": "agricultural-machinery-distributor-near-me",
+    "label": "agricultural machinery distributor near me",
+    "intent": "distributors",
+    "tradeDirection": "domestic",
+    "priorityTier": 2
+  },
+  "12": {
+    "id": 12,
+    "slug": "agricultural-equipment-wholesale-distributor",
+    "label": "agricultural equipment wholesale distributor",
+    "intent": "distributors",
+    "tradeDirection": "domestic",
+    "priorityTier": 2
+  },
+  "13": {
+    "id": 13,
+    "slug": "bulk-agricultural-machinery-supplier",
+    "label": "bulk agricultural machinery supplier",
+    "intent": "suppliers",
+    "tradeDirection": "domestic",
+    "priorityTier": 2
+  },
+  "14": {
+    "id": 14,
+    "slug": "agricultural-machinery-marketplace",
+    "label": "agricultural machinery marketplace",
+    "intent": "marketplace",
+    "tradeDirection": "both",
+    "priorityTier": 3
+  },
+  "15": {
+    "id": 15,
+    "slug": "agricultural-machinery-procurement-company",
+    "label": "agricultural machinery procurement company",
+    "intent": "buyers",
+    "tradeDirection": "import",
+    "priorityTier": 1
+  },
+  "16": {
+    "id": 16,
+    "slug": "agricultural-equipment-sourcing-company",
+    "label": "agricultural equipment sourcing company",
+    "intent": "buyers",
+    "tradeDirection": "import",
+    "priorityTier": 1
+  },
+  "17": {
+    "id": 17,
+    "slug": "farm-machinery-wholesalers",
+    "label": "farm machinery wholesalers",
+    "intent": "wholesalers",
+    "tradeDirection": "domestic",
+    "priorityTier": 2
+  },
+  "18": {
+    "id": 18,
+    "slug": "agricultural-machinery-supplier",
+    "label": "agricultural machinery supplier",
+    "intent": "suppliers",
+    "tradeDirection": "domestic",
+    "priorityTier": 2
+  },
+  "19": {
+    "id": 19,
+    "slug": "agricultural-machinery-distributor",
+    "label": "agricultural machinery distributor",
+    "intent": "distributors",
+    "tradeDirection": "domestic",
+    "priorityTier": 2
+  },
+  "20": {
+    "id": 20,
+    "slug": "agricultural-machinery-dealer",
+    "label": "agricultural machinery dealer",
+    "intent": "dealers",
+    "tradeDirection": "domestic",
+    "priorityTier": 2
+  },
+  "21": {
+    "id": 21,
+    "slug": "agricultural-equipment-exporter",
+    "label": "agricultural equipment exporter",
+    "intent": "exporters",
+    "tradeDirection": "export",
+    "priorityTier": 1
+  },
+  "22": {
+    "id": 22,
+    "slug": "agricultural-machinery-wholesaler",
+    "label": "agricultural machinery wholesaler",
+    "intent": "wholesalers",
+    "tradeDirection": "domestic",
+    "priorityTier": 2
+  },
+  "23": {
+    "id": 23,
+    "slug": "agricultural-machinery-trader",
+    "label": "agricultural machinery trader",
+    "intent": "traders",
+    "tradeDirection": "both",
+    "priorityTier": 2
+  },
+  "24": {
+    "id": 24,
+    "slug": "agricultural-machinery-manufacturer",
+    "label": "agricultural machinery manufacturer",
+    "intent": "manufacturers",
+    "tradeDirection": "domestic",
+    "priorityTier": 1
+  },
+  "25": {
+    "id": 25,
+    "slug": "agricultural-equipment-procurement",
+    "label": "agricultural equipment procurement",
+    "intent": "buyers",
+    "tradeDirection": "import",
+    "priorityTier": 1
+  },
+  "26": {
+    "id": 26,
+    "slug": "agricultural-machinery-importers",
+    "label": "agricultural machinery importers",
+    "intent": "importers",
+    "tradeDirection": "import",
+    "priorityTier": 1
+  }
+}

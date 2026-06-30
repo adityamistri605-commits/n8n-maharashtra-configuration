@@ -1,0 +1,89 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "projectName": "Maharashtra Agricultural Machinery Leads",
+    "workflowVersion": "2.0.0",
+    "encoding": "UTF-8"
+  },
+  "execution": {
+    "mode": "queue",
+    "saveManualExecutions": true,
+    "saveDataSuccessExecution": "last",
+    "saveDataErrorExecution": "all",
+    "executionTimeout": 86400,
+    "maxExecutionTime": 86400
+  },
+  "schedule": {
+    "enabled": true,
+    "cronExpression": "0 2 * * *",
+    "timezone": "Asia/Kolkata",
+    "description": "Run daily at 2:00 AM IST"
+  },
+  "batching": {
+    "queriesPerBatch": 10,
+    "delayBetweenBatchesMs": 1000,
+    "delayBetweenRequestsMs": 500,
+    "maxConcurrentBatches": 1,
+    "totalQueries": 3874,
+    "estimatedBatches": 388,
+    "estimatedRunTimeMinutes": 120
+  },
+  "retryPolicy": {
+    "maxRetries": 3,
+    "retryOnFail": true,
+    "waitBetweenTriesMs": 2000,
+    "continueOnFailItem": true
+  },
+  "stateManagement": {
+    "useStaticData": true,
+    "staticDataKeys": {
+      "totalQueries": "totalQueries",
+      "completedQueries": "completedQueries",
+      "failedQueries": "failedQueries",
+      "runStartedAt": "runStartedAt",
+      "accumulatedLeads": "allLeads",
+      "lastBatchId": "lastBatchId"
+    },
+    "resetStateOnNewRun": true
+  },
+  "pipeline": {
+    "stages": [
+      { "order": 1, "name": "queryGeneration",    "enabled": true,  "description": "Generate all 3,874 city × category combinations" },
+      { "order": 2, "name": "serpCollection",     "enabled": true,  "description": "Google SERP results via Bright Data SERP API" },
+      { "order": 3, "name": "mapsCollection",     "enabled": true,  "description": "Google Maps / GMB via Bright Data Web Scraper IDE" },
+      { "order": 4, "name": "resultMerge",        "enabled": true,  "description": "Combine SERP + Maps into unified stream" },
+      { "order": 5, "name": "websiteScraping",    "enabled": true,  "description": "Extract contacts from business websites" },
+      { "order": 6, "name": "hunterEnrichment",   "enabled": true,  "description": "Hunter.io domain search + email finder" },
+      { "order": 7, "name": "validation",         "enabled": true,  "description": "Phone/email/domain validation" },
+      { "order": 8, "name": "deduplication",      "enabled": true,  "description": "Remove duplicate businesses" },
+      { "order": 9, "name": "scoring",            "enabled": true,  "description": "Lead quality scoring 0–100" },
+      { "order": 10, "name": "csvExport",         "enabled": true,  "description": "Export to timestamped CSV/Excel file" }
+    ]
+  },
+  "notifications": {
+    "onComplete": {
+      "enabled": false,
+      "channel": "webhook",
+      "webhookUrl": "{{NOTIFICATION_WEBHOOK_URL}}"
+    },
+    "onError": {
+      "enabled": false,
+      "channel": "webhook",
+      "webhookUrl": "{{NOTIFICATION_WEBHOOK_URL}}"
+    }
+  },
+  "output": {
+    "directory": "/data/exports",
+    "fileNameTemplate": "mh_agri_leads_{{timestamp}}.csv",
+    "summaryFileNameTemplate": "mh_agri_summary_{{timestamp}}.json",
+    "encoding": "UTF-8-BOM",
+    "includeHeaders": true
+  },
+  "logging": {
+    "level": "info",
+    "logDirectory": "/data/logs",
+    "logFileNameTemplate": "pipeline_{{date}}.log",
+    "logFailedQueries": true,
+    "failedQueriesFile": "/data/logs/failed_queries.json"
+  }
+}

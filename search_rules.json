@@ -1,0 +1,88 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "encoding": "UTF-8",
+    "description": "Rules for query construction, result filtering, and fallback logic"
+  },
+  "queryConstruction": {
+    "appendState": true,
+    "stateSuffix": "Maharashtra",
+    "appendCountry": false,
+    "maxQueryLength": 200,
+    "sanitization": {
+      "trimWhitespace": true,
+      "collapseSpaces": true,
+      "removeSpecialChars": false
+    },
+    "tier1CityBoost": {
+      "enabled": true,
+      "tier1Cities": ["Mumbai City", "Pune", "Nagpur", "Nashik", "Kolhapur", "Amravati", "Solapur", "Thane", "Kalyan", "Dombivli", "Chhatrapati Sambhajinagar"],
+      "additionalTemplate": "{{category}} {{city}} export import",
+      "description": "Run an extra query for tier-1 cities to capture more leads"
+    }
+  },
+  "resultFiltering": {
+    "minBusinessNameLength": 3,
+    "maxBusinessNameLength": 200,
+    "skipIfNameContains": ["error", "404", "not found", "page not found"],
+    "skipIfWebsiteContains": [
+      "facebook.com", "instagram.com", "twitter.com", "youtube.com",
+      "linkedin.com", "wikipedia.org", "justdial.com", "indiamart.com",
+      "tradeindia.com", "sulekha.com", "yellowpages.in", "magicbricks.com",
+      "99acres.com", "housing.com", "zomato.com", "swiggy.com"
+    ],
+    "minGoogleRating": 0,
+    "minReviewsToBoostScore": 5,
+    "maxResultsPerQuery": {
+      "serp": 10,
+      "maps": 20
+    }
+  },
+  "fallbackLogic": {
+    "ifZeroSerpResults": {
+      "action": "skipToMaps",
+      "description": "If SERP returns 0 results, skip to Maps only"
+    },
+    "ifZeroMapsResults": {
+      "action": "logAndContinue",
+      "description": "Log the query as no-result and continue pipeline"
+    },
+    "ifWebsiteTimeout": {
+      "action": "retryOnce",
+      "retryDelayMs": 2000,
+      "fallback": "skipWebsiteScraping",
+      "description": "Retry once, then skip website scraping for that lead"
+    },
+    "ifSnapshotTimeout": {
+      "action": "retrySnapshot",
+      "maxRetries": 2,
+      "description": "Re-trigger the Bright Data snapshot up to 2 times"
+    },
+    "ifHunterApiQuotaExceeded": {
+      "action": "pauseHunterFor",
+      "pauseMinutes": 60,
+      "description": "Pause Hunter.io enrichment for 60 mins to reset quota"
+    }
+  },
+  "priorityOrdering": {
+    "processHighPriorityCategoriesFirst": true,
+    "highPriorityIntents": ["exporters", "importers", "manufacturers", "buyers"],
+    "processTier1CitiesFirst": true,
+    "tier1CityIds": [77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 104, 105, 17, 45, 69, 25, 130, 134, 135, 136]
+  },
+  "geographicCoverage": {
+    "totalDistricts": 36,
+    "totalLocations": 149,
+    "focusRegions": {
+      "Vidarbha": ["Nagpur", "Amravati", "Akola", "Yavatmal", "Wardha", "Buldhana", "Washim", "Hingoli"],
+      "Marathwada": ["Chhatrapati Sambhajinagar", "Beed", "Latur", "Nanded", "Parbhani", "Hingoli", "Jalna", "Dharashiv"],
+      "Konkan": ["Mumbai City", "Mumbai Suburban", "Thane", "Raigad", "Ratnagiri", "Sindhudurg", "Palghar"],
+      "WesternMaharashtra": ["Pune", "Nashik", "Solapur", "Satara", "Sangli", "Kolhapur"]
+    }
+  },
+  "deduplicationRules": {
+    "crossQueryDedup": true,
+    "description": "A business appearing across multiple queries is deduplicated — only its best-scored record is kept",
+    "dedupScope": "entire_run"
+  }
+}

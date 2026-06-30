@@ -1,14 +1,115 @@
 {
   "metadata": {
-    "version": "2.0.0",
-    "provider": "Bright Data"
+    "version": "1.0.0",
+    "provider": "Hunter.io",
+    "website": "https://hunter.io",
+    "apiVersion": "v2",
+    "encoding": "UTF-8",
+    "description": "Maps Hunter.io API response fields to the pipeline's internal output schema. Used by the Hunter enrichment stage to extract and normalise Hunter data before merging with lead records."
   },
-  "datasets": {
-    "googleMaps": {
-      "datasetId": "gd_l7q7dkf244hwjntr0",
-      "triggerEndpoint": "https://api.brightdata.com/datasets/v3/trigger",
-      "snapshotEndpoint": "https://api.brightdata.com/datasets/v3/snapshot/{{snapshotId}}",
-      "progressEndpoint": "https://api.brightdata.com/datasets/v3/progress/{{snapshotId}}"
+  "fieldMapping": {
+    "domain": {
+      "hunterResponsePath": "data.domain",
+      "outputField": "website",
+      "description": "The business domain returned by Hunter. Used to populate the Website output column if no website was found during scraping.",
+      "nullable": true,
+      "transform": "prefixHttpsIfMissing"
+    },
+    "email": {
+      "hunterResponsePath": "data.emails[0].value",
+      "outputField": "primaryEmail",
+      "description": "The highest-confidence email address returned by Hunter domain search or email finder.",
+      "nullable": true,
+      "transform": "lowercase"
+    },
+    "confidence": {
+      "hunterResponsePath": "data.emails[0].confidence",
+      "outputField": "hunterScore",
+      "description": "Hunter.io confidence score (0–100). Stored in the Hunter Score output column. Scores below 70 are deprioritised.",
+      "nullable": true,
+      "type": "integer",
+      "minimumAcceptableScore": 70
+    },
+    "verification": {
+      "hunterResponsePath": "data.emails[0].verification.status",
+      "outputField": "emailSource",
+      "description": "Hunter verification status: valid, accept_all, invalid, disposable, webmail. Used to set the Email Source output column value to hunter_domain or hunter_finder.",
+      "nullable": true,
+      "acceptableStatuses": ["valid", "accept_all"],
+      "rejectStatuses": ["invalid", "disposable", "webmail"]
+    },
+    "firstName": {
+      "hunterResponsePath": "data.emails[0].first_name",
+      "outputField": "_hunterFirstName",
+      "description": "Contact first name from Hunter. Stored as an internal enrichment field. Not included in the final export columns.",
+      "nullable": true,
+      "internal": true
+    },
+    "lastName": {
+      "hunterResponsePath": "data.emails[0].last_name",
+      "outputField": "_hunterLastName",
+      "description": "Contact last name from Hunter. Stored as an internal enrichment field. Not included in the final export columns.",
+      "nullable": true,
+      "internal": true
+    },
+    "position": {
+      "hunterResponsePath": "data.emails[0].position",
+      "outputField": "_hunterPosition",
+      "description": "Job title or position of the contact returned by Hunter. Stored as an internal enrichment field for scoring purposes. Not included in the final export columns.",
+      "nullable": true,
+      "internal": true,
+      "highValuePositions": [
+        "owner",
+        "director",
+        "managing director",
+        "ceo",
+        "proprietor",
+        "partner",
+        "manager",
+        "export manager",
+        "sales manager"
+      ]
+    },
+    "company": {
+      "hunterResponsePath": "data.organization",
+      "outputField": "_hunterCompany",
+      "description": "Company or organisation name returned by Hunter. Used for cross-validation against the scraped business name. Not included in the final export columns.",
+      "nullable": true,
+      "internal": true
     }
+  },
+  "endpoints": {
+    "domainSearch": {
+      "url": "https://api.hunter.io/v2/domain-search",
+      "method": "GET",
+      "primaryUseCase": "Find all known emails for a business domain. Triggered when a website is available for a lead.",
+      "requiredParams": ["domain", "api_key"],
+      "optionalParams": ["limit", "offset", "type", "seniority", "department"]
+    },
+    "emailFinder": {
+      "url": "https://api.hunter.io/v2/email-finder",
+      "method": "GET",
+      "primaryUseCase": "Guess the email address of a named contact at a domain. Triggered when domain search returns no usable results.",
+      "requiredParams": ["domain", "first_name", "last_name", "api_key"],
+      "optionalParams": []
+    },
+    "emailVerifier": {
+      "url": "https://api.hunter.io/v2/email-verifier",
+      "method": "GET",
+      "primaryUseCase": "Verify deliverability of an email address found by scraping or Hunter.",
+      "requiredParams": ["email", "api_key"],
+      "optionalParams": []
+    }
+  },
+  "authentication": {
+    "apiKeyEnvVar": "HUNTER_API_KEY",
+    "note": "API key must be set as the n8n environment variable HUNTER_API_KEY. Never hardcode in a workflow node."
+  },
+  "usageRules": {
+    "skipIfEmailAlreadyFound": true,
+    "skipIfNoWebsite": true,
+    "onlyRunOnLeadsWithMinScore": 50,
+    "maxDomainsPerRun": 200,
+    "priorityIntents": ["exporters", "importers", "manufacturers", "buyers"]
   }
 }

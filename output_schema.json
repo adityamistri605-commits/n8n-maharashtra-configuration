@@ -1,0 +1,58 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "outputFormat": "CSV",
+    "encoding": "UTF-8-BOM",
+    "delimiter": ",",
+    "totalColumns": 32,
+    "encoding_note": "UTF-8 with BOM for correct Excel rendering on Windows"
+  },
+  "columns": [
+    { "order": 1,  "key": "rank",              "header": "Rank",                   "type": "integer",  "description": "Ordered by lead score descending",         "nullable": false },
+    { "order": 2,  "key": "leadScore",         "header": "Lead Score",             "type": "integer",  "description": "Quality score 0–100",                       "nullable": false },
+    { "order": 3,  "key": "leadTier",          "header": "Lead Tier",              "type": "string",   "description": "Hot / Warm / Cold / Discard",               "nullable": false },
+    { "order": 4,  "key": "businessName",      "header": "Business Name",          "type": "string",   "description": "Trading or registered name of the company", "nullable": false },
+    { "order": 5,  "key": "category",          "header": "Category",               "type": "string",   "description": "Search category used to find this lead",    "nullable": false },
+    { "order": 6,  "key": "intent",            "header": "Intent",                 "type": "string",   "description": "exporters / importers / manufacturers etc.", "nullable": false },
+    { "order": 7,  "key": "tradeDirection",    "header": "Trade Direction",        "type": "string",   "description": "export / import / domestic / both",         "nullable": true  },
+    { "order": 8,  "key": "city",              "header": "City",                   "type": "string",   "description": "Maharashtra city from search query",         "nullable": false },
+    { "order": 9,  "key": "district",          "header": "District",               "type": "string",   "description": "Maharashtra district",                       "nullable": true  },
+    { "order": 10, "key": "state",             "header": "State",                  "type": "string",   "description": "Always Maharashtra",                         "nullable": false, "defaultValue": "Maharashtra" },
+    { "order": 11, "key": "country",           "header": "Country",                "type": "string",   "description": "Always India",                              "nullable": false, "defaultValue": "India" },
+    { "order": 12, "key": "address",           "header": "Address",                "type": "string",   "description": "Full street address",                        "nullable": true  },
+    { "order": 13, "key": "pincode",           "header": "Pincode",                "type": "string",   "description": "6-digit Indian postal code",                 "nullable": true  },
+    { "order": 14, "key": "primaryPhone",      "header": "Phone (Primary)",        "type": "string",   "description": "Best validated 10-digit phone",              "nullable": true  },
+    { "order": 15, "key": "allPhones",         "header": "All Phones",             "type": "string",   "description": "All phones found, pipe-separated",           "nullable": true  },
+    { "order": 16, "key": "hasValidPhone",     "header": "Has Valid Phone",        "type": "boolean",  "description": "Yes / No",                                  "nullable": false },
+    { "order": 17, "key": "primaryEmail",      "header": "Email (Primary)",        "type": "string",   "description": "Best deliverable email address",             "nullable": true  },
+    { "order": 18, "key": "allEmails",         "header": "All Emails",             "type": "string",   "description": "All emails found, pipe-separated",           "nullable": true  },
+    { "order": 19, "key": "hasValidEmail",     "header": "Has Valid Email",        "type": "boolean",  "description": "Yes / No",                                  "nullable": false },
+    { "order": 20, "key": "emailSource",       "header": "Email Source",           "type": "string",   "description": "website_scrape / hunter_domain / hunter_finder", "nullable": true },
+    { "order": 21, "key": "hunterScore",       "header": "Hunter Score",           "type": "integer",  "description": "Hunter.io confidence score 0–100",           "nullable": true  },
+    { "order": 22, "key": "website",           "header": "Website",                "type": "string",   "description": "Business website URL",                       "nullable": true  },
+    { "order": 23, "key": "websiteScraped",    "header": "Website Scraped",        "type": "boolean",  "description": "Yes / No",                                  "nullable": false },
+    { "order": 24, "key": "googleRating",      "header": "Google Rating",          "type": "float",    "description": "Google Maps rating 1.0–5.0",                 "nullable": true  },
+    { "order": 25, "key": "reviewCount",       "header": "Reviews Count",          "type": "integer",  "description": "Total number of Google reviews",             "nullable": true  },
+    { "order": 26, "key": "gmbCategory",       "header": "GMB Category",           "type": "string",   "description": "Google My Business category",                "nullable": true  },
+    { "order": 27, "key": "googleMapsUrl",     "header": "Google Maps URL",        "type": "string",   "description": "Direct link to GMB listing",                 "nullable": true  },
+    { "order": 28, "key": "dataSource",        "header": "Data Source",            "type": "string",   "description": "google_maps / google_serp / google_local_pack", "nullable": false },
+    { "order": 29, "key": "searchTerm",        "header": "Search Term",            "type": "string",   "description": "Exact query used to find this lead",         "nullable": false },
+    { "order": 30, "key": "queryId",           "header": "Query ID",               "type": "string",   "description": "MH-{cityId}-{categoryId}-{seq}",             "nullable": false },
+    { "order": 31, "key": "scrapedAt",         "header": "Scraped At",             "type": "datetime", "description": "ISO 8601 timestamp of scrape",               "nullable": false },
+    { "order": 32, "key": "exportedAt",        "header": "Exported At",            "type": "datetime", "description": "ISO 8601 timestamp of CSV export",           "nullable": false }
+  ],
+  "excelFormatting": {
+    "headerRowBold": true,
+    "headerFillColor": "1F6B35",
+    "headerFontColor": "FFFFFF",
+    "freezeHeaderRow": true,
+    "autoFilter": true,
+    "columnWidths": {
+      "businessName": 35,
+      "address": 40,
+      "website": 30,
+      "googleMapsUrl": 30,
+      "searchTerm": 40
+    }
+  }
+}

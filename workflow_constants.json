@@ -1,14 +1,86 @@
-[
-  {
-    "SearchID": "MH-01-01-0001",
-    "Category": "Agricultural Machinery Dealers",
-    "Location": "Pune",
-    "SearchQuery": "Agricultural Machinery Dealers in Pune Maharashtra India"
+{
+  "metadata": {
+    "version": "1.0.0",
+    "encoding": "UTF-8",
+    "description": "Reusable constants for the Bright Data + n8n lead generation pipeline. Load this file once at workflow start using a Read Binary File node and reference its values in subsequent Set or Function nodes to avoid repeating magic strings inline."
   },
-  {
-    "SearchID": "MH-01-02-0002",
-    "Category": "Tractor Dealers",
-    "Location": "Pune",
-    "SearchQuery": "Tractor Dealers in Pune Maharashtra India"
+  "constants": {
+    "state": {
+      "value": "Maharashtra",
+      "description": "The target Indian state for all search queries and output records."
+    },
+    "stateCode": {
+      "value": "MH",
+      "description": "Two-letter ISO state code for Maharashtra."
+    },
+    "country": {
+      "value": "India",
+      "description": "The target country for all search queries and output records."
+    },
+    "countryCode": {
+      "value": "IN",
+      "description": "Two-letter ISO 3166-1 alpha-2 country code for India."
+    },
+    "minimumBusinesses": {
+      "value": 1,
+      "description": "Minimum number of businesses a query must return to be considered successful. Queries returning fewer results than this threshold are logged as low-yield."
+    },
+    "blankIfMissing": {
+      "value": true,
+      "description": "When true, any output field that cannot be sourced from scraped or enriched data is left blank. The pipeline never fabricates or invents field values."
+    },
+    "verifyPublicDataOnly": {
+      "value": true,
+      "description": "When true, the pipeline only collects and verifies data that is publicly available on Google Maps, business websites, or via Hunter.io domain search. No private data sources are used."
+    },
+    "googleMapsSource": {
+      "value": "Google Maps",
+      "description": "The canonical data source label written to the Data Source output column for records collected via Bright Data's Google Maps dataset."
+    },
+    "websiteScraping": {
+      "enabled": true,
+      "description": "Controls whether the website scraping stage runs. When true, the workflow attempts to extract additional contact information from each business website using the Bright Data Web Unlocker zone.",
+      "targetElements": [
+        "tel: links",
+        "mailto: links",
+        "contact page emails",
+        "footer phone numbers"
+      ]
+    },
+    "hunterEnrichment": {
+      "enabled": true,
+      "description": "Controls whether the Hunter.io enrichment stage runs. When true, the workflow calls Hunter.io domain search and email finder for leads that have a website but no verified email.",
+      "skipIfEmailFound": true,
+      "skipIfNoWebsite": true,
+      "minLeadScoreToRun": 50
+    },
+    "totalCities": {
+      "value": 149,
+      "description": "Total number of Maharashtra cities in cities.json."
+    },
+    "totalCategories": {
+      "value": 26,
+      "description": "Total number of search categories in categories.json."
+    },
+    "totalSearchQueries": {
+      "value": 3874,
+      "description": "Total number of search query combinations: 149 cities × 26 categories."
+    },
+    "queryIdFormat": {
+      "value": "MH-{cityId}-{categoryId}-{sequence}",
+      "description": "Format string for the Query ID column in the output. Placeholders are replaced by the workflow using values from city_lookup.json and category_lookup.json."
+    },
+    "outputFileNameTemplate": {
+      "value": "mh_agri_leads_{timestamp}.xlsx",
+      "description": "Template for the final output file name. The workflow replaces {timestamp} with an ISO 8601 UTC timestamp at export time."
+    },
+    "timezone": {
+      "value": "Asia/Kolkata",
+      "description": "Timezone used for scheduling, logging, and all timestamp fields in the output."
+    },
+    "neverFabricateData": {
+      "value": true,
+      "description": "Hard constraint. The pipeline must never invent, guess, or fabricate any business data including names, addresses, phones, emails, or websites. All values must be sourced from Bright Data or Hunter.io."
+    }
   }
-]
+}
