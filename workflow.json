@@ -302,7 +302,7 @@
         -100
       ],
       "parameters": {
-        "batchSize": "={{ $getWorkflowStaticData('global').currentBatchSize || 10 }}",
+        "batchSize": 10,
         "options": {}
       },
       "typeVersion": 3
