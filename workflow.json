@@ -88,7 +88,7 @@
         -100
       ],
       "parameters": {
-        "url": "={{ $json.baseDir }}workflow_constants.json",
+        "url": "={{ $('Set Config Base Dir').item.json.baseDir + \"workflow_constants.json\" }}",
         "method": "GET",
         "responseFormat": "json"
       },
@@ -104,7 +104,7 @@
         -100
       ],
       "parameters": {
-        "url": "={{ $json.baseDir }}workflow_settings.json",
+        "url": "={{ $('Set Config Base Dir').item.json.baseDir + \"workflow_settings.json\" }}",
         "method": "GET",
         "responseFormat": "json"
       },
@@ -120,7 +120,7 @@
         -100
       ],
       "parameters": {
-        "url": "={{ $json.baseDir }}environment.json",
+        "url": "={{ $('Set Config Base Dir').item.json.baseDir + \"environment.json\" }}",
         "method": "GET",
         "responseFormat": "json"
       },
@@ -136,7 +136,7 @@
         -100
       ],
       "parameters": {
-        "url": "={{ $json.baseDir }}output_schema.json",
+        "url": "={{ $('Set Config Base Dir').item.json.baseDir + \"output_schema.json\" }}",
         "method": "GET",
         "responseFormat": "json"
       },
@@ -152,7 +152,7 @@
         -100
       ],
       "parameters": {
-        "url": "={{ $json.baseDir }}hunter_mapping.json",
+        "url": "={{ $('Set Config Base Dir').item.json.baseDir + \"hunter_mapping.json\" }}",
         "method": "GET",
         "responseFormat": "json"
       },
@@ -168,7 +168,7 @@
         -100
       ],
       "parameters": {
-        "url": "={{ $json.baseDir }}validation_rules.json",
+        "url": "={{ $('Set Config Base Dir').item.json.baseDir + \"validation_rules.json\" }}",
         "method": "GET",
         "responseFormat": "json"
       },
@@ -184,7 +184,7 @@
         -100
       ],
       "parameters": {
-        "url": "={{ $json.baseDir }}search_rules.json",
+        "url": "={{ $('Set Config Base Dir').item.json.baseDir + \"search_rules.json\" }}",
         "method": "GET",
         "responseFormat": "json"
       },
@@ -200,7 +200,7 @@
         -100
       ],
       "parameters": {
-        "url": "={{ $json.baseDir }}search_parameters.json",
+        "url": "={{ $('Set Config Base Dir').item.json.baseDir + \"search_parameters.json\" }}",
         "method": "GET",
         "responseFormat": "json"
       },
@@ -216,7 +216,7 @@
         -100
       ],
       "parameters": {
-        "url": "={{ $json.baseDir }}output_mapping.json",
+        "url": "={{ $('Set Config Base Dir').item.json.baseDir + \"output_mapping.json\" }}",
         "method": "GET",
         "responseFormat": "json"
       },
@@ -232,7 +232,7 @@
         -100
       ],
       "parameters": {
-        "url": "={{ $json.baseDir }}brightdata_dataset_mapping.json",
+        "url": "={{ $('Set Config Base Dir').item.json.baseDir + \"brightdata_dataset_mapping.json\" }}",
         "method": "GET",
         "responseFormat": "json"
       },
@@ -261,7 +261,7 @@
         -100
       ],
       "parameters": {
-        "url": "={{ $items('Parse, Consolidate & Validate')[0].json.baseDir }}search_queries.csv",
+        "url": "={{ $('Set Config Base Dir').item.json.baseDir + \"search_queries.csv\" }}",
         "method": "GET",
         "responseFormat": "file",
         "outputBinaryFieldName": "data"
