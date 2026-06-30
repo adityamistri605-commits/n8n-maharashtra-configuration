@@ -88,7 +88,7 @@
         -100
       ],
       "parameters": {
-        "url": "={ $json.baseDir }workflow_constants.json",
+        "url": "={{ $json.baseDir }}workflow_constants.json",
         "method": "GET",
         "responseFormat": "json"
       },
@@ -104,7 +104,7 @@
         -100
       ],
       "parameters": {
-        "url": "={ $json.baseDir }workflow_settings.json",
+        "url": "={{ $json.baseDir }}workflow_settings.json",
         "method": "GET",
         "responseFormat": "json"
       },
@@ -120,7 +120,7 @@
         -100
       ],
       "parameters": {
-        "url": "={ $json.baseDir }environment.json",
+        "url": "={{ $json.baseDir }}environment.json",
         "method": "GET",
         "responseFormat": "json"
       },
@@ -136,7 +136,7 @@
         -100
       ],
       "parameters": {
-        "url": "={ $json.baseDir }output_schema.json",
+        "url": "={{ $json.baseDir }}output_schema.json",
         "method": "GET",
         "responseFormat": "json"
       },
@@ -152,7 +152,7 @@
         -100
       ],
       "parameters": {
-        "url": "={ $json.baseDir }hunter_mapping.json",
+        "url": "={{ $json.baseDir }}hunter_mapping.json",
         "method": "GET",
         "responseFormat": "json"
       },
@@ -168,7 +168,7 @@
         -100
       ],
       "parameters": {
-        "url": "={ $json.baseDir }validation_rules.json",
+        "url": "={{ $json.baseDir }}validation_rules.json",
         "method": "GET",
         "responseFormat": "json"
       },
@@ -184,7 +184,7 @@
         -100
       ],
       "parameters": {
-        "url": "={ $json.baseDir }search_rules.json",
+        "url": "={{ $json.baseDir }}search_rules.json",
         "method": "GET",
         "responseFormat": "json"
       },
@@ -200,7 +200,7 @@
         -100
       ],
       "parameters": {
-        "url": "={ $json.baseDir }search_parameters.json",
+        "url": "={{ $json.baseDir }}search_parameters.json",
         "method": "GET",
         "responseFormat": "json"
       },
@@ -216,7 +216,7 @@
         -100
       ],
       "parameters": {
-        "url": "={ $json.baseDir }output_mapping.json",
+        "url": "={{ $json.baseDir }}output_mapping.json",
         "method": "GET",
         "responseFormat": "json"
       },
@@ -232,7 +232,7 @@
         -100
       ],
       "parameters": {
-        "url": "={ $json.baseDir }brightdata_dataset_mapping.json",
+        "url": "={{ $json.baseDir }}brightdata_dataset_mapping.json",
         "method": "GET",
         "responseFormat": "json"
       },
@@ -356,7 +356,7 @@
       },
       "credentials": {
         "httpHeaderAuth": {
-          "id": "YOUR_BRIGHTDATA_CRED_ID",
+          "id": "brightDataApi",
           "name": "Bright Data API"
         }
       },
@@ -499,7 +499,7 @@
       },
       "credentials": {
         "httpHeaderAuth": {
-          "id": "YOUR_BRIGHTDATA_CRED_ID",
+          "id": "brightDataApi",
           "name": "Bright Data API"
         }
       },
@@ -569,7 +569,7 @@
       },
       "credentials": {
         "httpHeaderAuth": {
-          "id": "YOUR_BRIGHTDATA_CRED_ID",
+          "id": "brightDataApi",
           "name": "Bright Data API"
         }
       },
@@ -881,7 +881,7 @@
       },
       "credentials": {
         "googleSheetsOAuth2Api": {
-          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "id": "googleSheetsOAuth2Api",
           "name": "Google Sheets OAuth2"
         }
       },
@@ -1020,7 +1020,7 @@
       },
       "credentials": {
         "googleDriveOAuth2Api": {
-          "id": "YOUR_GOOGLE_DRIVE_CREDENTIAL_ID",
+          "id": "googleDriveOAuth2Api",
           "name": "Google Drive OAuth2"
         }
       }
@@ -1044,7 +1044,7 @@
       },
       "credentials": {
         "googleDriveOAuth2Api": {
-          "id": "YOUR_GOOGLE_DRIVE_CREDENTIAL_ID",
+          "id": "googleDriveOAuth2Api",
           "name": "Google Drive OAuth2"
         }
       }
