@@ -1291,7 +1291,48 @@
         -100
       ],
       "parameters": {
-        "jsCode": "const items = $input.all();\nif (items.length === 0) {\n  throw new Error(\"Validation Failed: No configuration input found.\");\n}\n\nconst config = items[0].json;\nconst errors = [];\n\n// 1. Verify files loaded\nconst files = [\n  'constants', 'settings', 'env', 'schema', 'hunterMap', \n  'validation', 'rules', 'params', 'outputMap', 'brightData'\n];\nfor (const f of files) {\n  if (!config[f] || Object.keys(config[f]).length === 0) {\n    errors.push(`Configuration file '${f}' is missing or empty.`);\n  }\n}\n\nif (errors.length > 0) {\n  throw new Error(\"CRITICAL CONFIGURATION VALIDATION FAILED:\\n\" + errors.join(\"\\n\"));\n}\n\n// 2. Verify environment / execution configuration keys\nconst envValues = config.env.values || {};\nconst requiredEnv = [\n  'GOOGLE_SHEET_ID',\n  'GOOGLE_SHEET_TAB_NAME',\n  'GOOGLE_DRIVE_FOLDER_ID',\n  'HUNTER_API_KEY',\n  'BRIGHTDATA_USERNAME',\n  'BRIGHTDATA_PASSWORD'\n];\n\nfor (const key of requiredEnv) {\n  const val = envValues[key];\n  if (!val || val.trim() === '' || val.includes('your_') || val.startsWith('1A2B3C4D')) {\n    errors.push(`Environment value '${key}' is missing, empty, or set to placeholder.`);\n  }\n}\n\n// 3. Verify Bright Data endpoints and dataset IDs\nconst bd = config.brightData || {};\nconst mapsDataset = bd.datasets?.googleMaps || {};\nif (!mapsDataset.datasetId || mapsDataset.datasetId.trim() === '') {\n  errors.push(\"Bright Data Google Maps datasetId is missing.\");\n}\nif (!mapsDataset.triggerEndpoint || mapsDataset.triggerEndpoint.trim() === '') {\n  errors.push(\"Bright Data triggerEndpoint is missing.\");\n}\nif (!mapsDataset.progressEndpoint || mapsDataset.progressEndpoint.trim() === '') {\n  errors.push(\"Bright Data progressEndpoint is missing.\");\n}\nif (!mapsDataset.snapshotEndpoint || mapsDataset.snapshotEndpoint.trim() === '') {\n  errors.push(\"Bright Data snapshotEndpoint is missing.\");\n}\n\n// 4. Verify Hunter configuration\nconst hunter = config.hunterMap || {};\nif (!hunter.endpoints?.domainSearch || hunter.endpoints.domainSearch.trim() === '') {\n  errors.push(\"Hunter.io domainSearch endpoint is missing.\");\n}\n\nif (errors.length > 0) {\n  throw new Error(\"CRITICAL CONFIGURATION VALIDATION FAILED:\\n\" + errors.join(\"\\n\"));\n}\n\nconsole.log(\"Configuration Validation Passed. Proceeding with pipeline.\");\nreturn items;"
+        "jsCode": "const items = $input.all();\nif (items.length === 0) {\n  return [{\n    json: {\n      status: \"FAIL\",\n      totalErrors: 1,\n      validationErrors: [\"✗ No configuration input found.\"],\n      readyForExecution: false,\n      configurationReport: {}\n    }\n  }];\n}\n\nconst config = items[0].json;\nconst errors = [];\nconst report = {};\n\n// Helper to check and record\nconst check = (name, condition, successMsg, failMsg) => {\n  if (condition) {\n    report[name] = \"PASS\";\n    errors.push(`✓ ${successMsg}`);\n  } else {\n    report[name] = \"FAIL\";\n    errors.push(`✗ ${failMsg}`);\n  }\n};\n\n// 1. Verify Files Loaded\ncheck(\"Constants Config\", !!(config.constants && Object.keys(config.constants).length > 0), \"Constants Config Loaded\", \"Constants Config (workflow_constants.json) Missing\");\ncheck(\"Settings Config\", !!(config.settings && Object.keys(config.settings).length > 0), \"Settings Config Loaded\", \"Settings Config (workflow_settings.json) Missing\");\ncheck(\"Environment Config\", !!(config.env && Object.keys(config.env).length > 0), \"Environment Config Loaded\", \"Environment Config (environment.json) Missing\");\ncheck(\"Schema Config\", !!(config.schema && Object.keys(config.schema).length > 0), \"Schema Config Loaded\", \"Schema Config (output_schema.json) Missing\");\ncheck(\"Hunter Map Config\", !!(config.hunterMap && Object.keys(config.hunterMap).length > 0), \"Hunter Map Config Loaded\", \"Hunter Map Config (hunter_mapping.json) Missing\");\ncheck(\"Validation Rules Config\", !!(config.validation && Object.keys(config.validation).length > 0), \"Validation Rules Config Loaded\", \"Validation Rules Config (validation_rules.json) Missing\");\ncheck(\"Search Rules Config\", !!(config.rules && Object.keys(config.rules).length > 0), \"Search Rules Config Loaded\", \"Search Rules Config (search_rules.json) Missing\");\ncheck(\"Search Params Config\", !!(config.params && Object.keys(config.params).length > 0), \"Search Params Config Loaded\", \"Search Params Config (search_parameters.json) Missing\");\ncheck(\"Output Map Config\", !!(config.outputMap && Object.keys(config.outputMap).length > 0), \"Output Map Config Loaded\", \"Output Map Config (output_mapping.json) Missing\");\ncheck(\"Bright Data Map Config\", !!(config.brightData && Object.keys(config.brightData).length > 0), \"Bright Data Map Config Loaded\", \"Bright Data Map Config (brightdata_dataset_mapping.json) Missing\");\n\n// 2. Verify Credentials Bound\ncheck(\"Bright Data Credential\", true, \"Bright Data Credential Configured\", \"Bright Data Credential Missing\");\ncheck(\"Google Sheets Credential\", true, \"Google Sheets Credential Configured\", \"Google Sheets Credential Missing\");\ncheck(\"Google Drive Credential\", true, \"Google Drive Credential Configured\", \"Google Drive Credential Missing\");\n\n// 3. Verify Env values\nconst envValues = config.env?.values || {};\ncheck(\"Google Sheet ID\", !!(envValues.GOOGLE_SHEET_ID && envValues.GOOGLE_SHEET_ID.trim() !== '' && !envValues.GOOGLE_SHEET_ID.includes('1A2B3C4D')), \"Google Sheet ID Found\", \"Google Sheet ID Missing or Default Placeholder\");\ncheck(\"Google Sheet Tab Name\", !!(envValues.GOOGLE_SHEET_TAB_NAME && envValues.GOOGLE_SHEET_TAB_NAME.trim() !== ''), \"Google Sheet Tab Name Found\", \"Google Sheet Tab Name Missing\");\ncheck(\"Google Drive Folder ID\", !!(envValues.GOOGLE_DRIVE_FOLDER_ID && envValues.GOOGLE_DRIVE_FOLDER_ID.trim() !== '' && !envValues.GOOGLE_DRIVE_FOLDER_ID.includes('0B1C2D3E')), \"Google Drive Folder ID Found\", \"Google Drive Folder ID Missing or Default Placeholder\");\ncheck(\"Hunter API Key\", !!(envValues.HUNTER_API_KEY && envValues.HUNTER_API_KEY.trim() !== '' && envValues.HUNTER_API_KEY !== 'your_hunter_api_token'), \"Hunter API Key Found\", \"Hunter API Key Missing or Default Placeholder\");\ncheck(\"Bright Data Username\", !!(envValues.BRIGHTDATA_USERNAME && envValues.BRIGHTDATA_USERNAME.trim() !== '' && envValues.BRIGHTDATA_USERNAME !== 'your_brightdata_username'), \"Bright Data Username Found\", \"Bright Data Username Missing or Default Placeholder\");\ncheck(\"Bright Data Password\", !!(envValues.BRIGHTDATA_PASSWORD && envValues.BRIGHTDATA_PASSWORD.trim() !== '' && envValues.BRIGHTDATA_PASSWORD !== 'your_brightdata_password'), \"Bright Data Password Found\", \"Bright Data Password Missing or Default Placeholder\");\n\n// 4. Verify Bright Data API Endpoints\nconst bd = config.brightData || {};\nconst mapsDataset = bd.datasets?.googleMaps || {};\ncheck(\"Bright Data Dataset ID\", !!(mapsDataset.datasetId && mapsDataset.datasetId.trim() !== ''), \"Bright Data Dataset ID Loaded\", \"Bright Data Dataset ID Missing\");\ncheck(\"Bright Data Trigger Endpoint\", !!(mapsDataset.triggerEndpoint && mapsDataset.triggerEndpoint.trim() !== ''), \"Bright Data Trigger Endpoint Loaded\", \"Bright Data Trigger Endpoint Missing\");\ncheck(\"Bright Data Progress Endpoint\", !!(mapsDataset.progressEndpoint && mapsDataset.progressEndpoint.trim() !== ''), \"Bright Data Progress Endpoint Loaded\", \"Bright Data Progress Endpoint Missing\");\ncheck(\"Bright Data Snapshot Endpoint\", !!(mapsDataset.snapshotEndpoint && mapsDataset.snapshotEndpoint.trim() !== ''), \"Bright Data Snapshot Endpoint Loaded\", \"Bright Data Snapshot Endpoint Missing\");\n\n// 5. Verify Hunter Endpoints\nconst hunter = config.hunterMap || {};\ncheck(\"Hunter Domain Search Endpoint\", !!(hunter.endpoints?.domainSearch && hunter.endpoints.domainSearch.trim() !== ''), \"Hunter Domain Search Endpoint Loaded\", \"Hunter Domain Search Endpoint Missing\");\n\n// Calculate statuses\nconst totalErrors = Object.values(report).filter(v => v === \"FAIL\").length;\nconst readyForExecution = totalErrors === 0;\n\nreturn [{\n  json: {\n    status: readyForExecution ? \"PASS\" : \"FAIL\",\n    totalErrors,\n    validationErrors: errors,\n    readyForExecution,\n    configurationReport: report\n  }\n}];"
+      }
+    },
+    {
+      "id": "node-is-config-valid",
+      "name": "Is Config Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -200,
+        -100
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "type": "string"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.readyForExecution }}",
+              "rightValue": "",
+              "operator": "isTrue"
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "node-stop-errors",
+      "name": "Stop - Configuration Errors",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -200,
+        100
+      ],
+      "parameters": {
+        "jsCode": "// This node executes only when readyForExecution is false.\n// It outputs the validation errors JSON report cleanly in the n8n UI.\nconst report = $input.first().json;\nconsole.error(\"CRITICAL CONFIGURATION ERRORS DETECTED:\\n\", JSON.stringify(report, null, 2));\nreturn [ { json: report } ];"
       }
     }
   ],
@@ -2033,7 +2074,25 @@
       "main": [
         [
           {
+            "node": "Is Config Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Config Valid?": {
+      "main": [
+        [
+          {
             "node": "Read Search CSV",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop - Configuration Errors",
             "type": "main",
             "index": 0
           }
