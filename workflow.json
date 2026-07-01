@@ -70,7 +70,7 @@
             {
               "id": "bd1",
               "name": "baseDir",
-              "value": "={{ ($env.GITHUB_RAW_BASE_URL || $env.CONFIG_BASE_DIR || 'https://raw.githubusercontent.com/adityamistri605-commits/n8n-maharashtra-configuration/main/').replace(/\\/$/, '') + '/' }}",
+              "value": "https://raw.githubusercontent.com/adityamistri605-commits/n8n-maharashtra-configuration/main/",
               "type": "string"
             }
           ]
@@ -244,7 +244,7 @@
       "name": "Parse, Consolidate & Validate",
       "type": "n8n-nodes-base.code",
       "position": [
-        -400,
+        -550,
         -100
       ],
       "parameters": {
@@ -272,7 +272,7 @@
       "name": "Parse Search Data",
       "type": "n8n-nodes-base.code",
       "position": [
-        0,
+        150,
         -100
       ],
       "parameters": {
@@ -285,7 +285,7 @@
       "name": "Dashboard & Batch Init",
       "type": "n8n-nodes-base.code",
       "position": [
-        200,
+        325,
         -100
       ],
       "parameters": {
@@ -298,7 +298,7 @@
       "name": "Process in Batches",
       "type": "n8n-nodes-base.splitInBatches",
       "position": [
-        420,
+        500,
         -100
       ],
       "parameters": {
@@ -635,7 +635,7 @@
           "retryOnFail": true,
           "maxTries": 3,
           "waitBetweenTries": 5000,
-          "proxy": "http://{{ $env.BRIGHTDATA_USERNAME }}:{{ $env.BRIGHTDATA_PASSWORD }}@{{ $items('Parse, Consolidate & Validate')[0].json.brightData?.zones?.webUnlocker?.proxyHost || 'brd.superproxy.io' }}:{{ $items('Parse, Consolidate & Validate')[0].json.brightData?.zones?.webUnlocker?.proxyPort || 22225 }}"
+          "proxy": "http://{{ $('Parse, Consolidate & Validate').item.json.env.values.BRIGHTDATA_USERNAME }}:{{ $('Parse, Consolidate & Validate').item.json.env.values.BRIGHTDATA_PASSWORD }}@{{ $items('Parse, Consolidate & Validate')[0].json.brightData?.zones?.webUnlocker?.proxyHost || 'brd.superproxy.io' }}:{{ $items('Parse, Consolidate & Validate')[0].json.brightData?.zones?.webUnlocker?.proxyPort || 22225 }}"
         }
       },
       "continueOnFail": true,
@@ -764,7 +764,7 @@
             },
             {
               "name": "api_key",
-              "value": "={{ $env.HUNTER_API_KEY }}"
+              "value": "={{ $('Parse, Consolidate & Validate').item.json.env.values.HUNTER_API_KEY }}"
             }
           ]
         },
@@ -875,8 +875,8 @@
       ],
       "parameters": {
         "operation": "append",
-        "sheetName": "={{ $env.GOOGLE_SHEET_TAB_NAME || 'MH Agri Leads' }}",
-        "documentId": "={{ $env.GOOGLE_SHEET_ID }}",
+        "sheetName": "={{ $('Parse, Consolidate & Validate').item.json.env.values.GOOGLE_SHEET_TAB_NAME || 'MH Agri Leads' }}",
+        "documentId": "={{ $('Parse, Consolidate & Validate').item.json.env.values.GOOGLE_SHEET_ID }}",
         "options": {},
         "mappingMode": "autoMapInputData"
       },
@@ -1016,7 +1016,7 @@
         "fileContent": "data",
         "name": "={{ ($items('Parse, Consolidate & Validate')[0].json.constants?.outputFileNameTemplate || 'mh_agri_leads_{timestamp}.xlsx').replace('{timestamp}', new Date().toISOString().replace(/[:.]/g, '-')) }}",
         "parents": [
-          "={{ $env.GOOGLE_DRIVE_FOLDER_ID }}"
+          "={{ $('Parse, Consolidate & Validate').item.json.env.values.GOOGLE_DRIVE_FOLDER_ID }}"
         ]
       },
       "credentials": {
@@ -1040,7 +1040,7 @@
         "fileContent": "data",
         "name": "={{ ($items('Parse, Consolidate & Validate')[0].json.constants?.outputFileNameTemplate || 'mh_agri_leads_{timestamp}.csv').replace('.xlsx', '.csv').replace('{timestamp}', new Date().toISOString().replace(/[:.]/g, '-')) }}",
         "parents": [
-          "={{ $env.GOOGLE_DRIVE_FOLDER_ID }}"
+          "={{ $('Parse, Consolidate & Validate').item.json.env.values.GOOGLE_DRIVE_FOLDER_ID }}"
         ]
       },
       "credentials": {
@@ -1056,12 +1056,12 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.6,
       "position": [
-        -50,
+        -25,
         -100
       ],
       "parameters": {
         "operation": "read",
-        "documentId": "={{ $env.GOOGLE_SHEET_ID }}",
+        "documentId": "={{ $('Parse, Consolidate & Validate').item.json.env.values.GOOGLE_SHEET_ID }}",
         "sheetName": "Pipeline Checkpoint",
         "options": {}
       },
@@ -1084,7 +1084,7 @@
       ],
       "parameters": {
         "operation": "append",
-        "documentId": "={{ $env.GOOGLE_SHEET_ID }}",
+        "documentId": "={{ $('Parse, Consolidate & Validate').item.json.env.values.GOOGLE_SHEET_ID }}",
         "sheetName": "Pipeline Checkpoint",
         "options": {},
         "mappingMode": "autoMapInputData"
@@ -1107,7 +1107,7 @@
       ],
       "parameters": {
         "operation": "append",
-        "documentId": "={{ $env.GOOGLE_SHEET_ID }}",
+        "documentId": "={{ $('Parse, Consolidate & Validate').item.json.env.values.GOOGLE_SHEET_ID }}",
         "sheetName": "Pipeline Checkpoint",
         "options": {},
         "mappingMode": "autoMapInputData"
@@ -1152,8 +1152,8 @@
       ],
       "parameters": {
         "operation": "read",
-        "documentId": "={{ $env.GOOGLE_SHEET_ID }}",
-        "sheetName": "={{ $env.GOOGLE_SHEET_TAB_NAME || 'MH Agri Leads' }}",
+        "documentId": "={{ $('Parse, Consolidate & Validate').item.json.env.values.GOOGLE_SHEET_ID }}",
+        "sheetName": "={{ $('Parse, Consolidate & Validate').item.json.env.values.GOOGLE_SHEET_TAB_NAME || 'MH Agri Leads' }}",
         "options": {}
       },
       "credentials": {
@@ -1220,7 +1220,7 @@
         "fileContent": "data",
         "name": "={{ ($items('Parse, Consolidate & Validate')[0].json.constants?.outputFileNameTemplate || 'mh_agri_leads_{timestamp}.xlsx').replace('{timestamp}', new Date().toISOString().substring(0, 10)) + '_consolidated.xlsx' }}",
         "parents": [
-          "={{ $env.GOOGLE_DRIVE_FOLDER_ID }}"
+          "={{ $('Parse, Consolidate & Validate').item.json.env.values.GOOGLE_DRIVE_FOLDER_ID }}"
         ]
       },
       "credentials": {
@@ -1244,7 +1244,7 @@
         "fileContent": "data",
         "name": "={{ ($items('Parse, Consolidate & Validate')[0].json.constants?.outputFileNameTemplate || 'mh_agri_leads_{timestamp}.csv').replace('.xlsx', '.csv').replace('{timestamp}', new Date().toISOString().substring(0, 10)) + '_consolidated.csv' }}",
         "parents": [
-          "={{ $env.GOOGLE_DRIVE_FOLDER_ID }}"
+          "={{ $('Parse, Consolidate & Validate').item.json.env.values.GOOGLE_DRIVE_FOLDER_ID }}"
         ]
       },
       "credentials": {
@@ -1279,6 +1279,19 @@
       ],
       "parameters": {
         "jsCode": "const excelUpload = $('Upload Excel Final to Drive').first().json;\nconst csvUpload = $('Upload CSV Final to Drive').first().json;\n\nconst report = {\n  Consolidation_Status: \"COMPLETE\",\n  Excel_File_Name: excelUpload.name,\n  Excel_File_ID: excelUpload.id,\n  CSV_File_Name: csvUpload.name,\n  CSV_File_ID: csvUpload.id,\n  Consolidated_Leads_Count: $('Consolidate & Deduplicate').all().length,\n  Timestamp: new Date().toISOString(),\n  Message: \"All 3,874 searches have been successfully completed, consolidated, deduplicated, and uploaded to Google Drive.\"\n};\n\nconsole.log(\"FINAL CONSOLIDATION REPORT:\\n\", JSON.stringify(report, null, 2));\nreturn [{ json: report }];"
+      }
+    },
+    {
+      "id": "node-config-validator",
+      "name": "Configuration Validator",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -375,
+        -100
+      ],
+      "parameters": {
+        "jsCode": "const items = $input.all();\nif (items.length === 0) {\n  throw new Error(\"Validation Failed: No configuration input found.\");\n}\n\nconst config = items[0].json;\nconst errors = [];\n\n// 1. Verify files loaded\nconst files = [\n  'constants', 'settings', 'env', 'schema', 'hunterMap', \n  'validation', 'rules', 'params', 'outputMap', 'brightData'\n];\nfor (const f of files) {\n  if (!config[f] || Object.keys(config[f]).length === 0) {\n    errors.push(`Configuration file '${f}' is missing or empty.`);\n  }\n}\n\nif (errors.length > 0) {\n  throw new Error(\"CRITICAL CONFIGURATION VALIDATION FAILED:\\n\" + errors.join(\"\\n\"));\n}\n\n// 2. Verify environment / execution configuration keys\nconst envValues = config.env.values || {};\nconst requiredEnv = [\n  'GOOGLE_SHEET_ID',\n  'GOOGLE_SHEET_TAB_NAME',\n  'GOOGLE_DRIVE_FOLDER_ID',\n  'HUNTER_API_KEY',\n  'BRIGHTDATA_USERNAME',\n  'BRIGHTDATA_PASSWORD'\n];\n\nfor (const key of requiredEnv) {\n  const val = envValues[key];\n  if (!val || val.trim() === '' || val.includes('your_') || val.startsWith('1A2B3C4D')) {\n    errors.push(`Environment value '${key}' is missing, empty, or set to placeholder.`);\n  }\n}\n\n// 3. Verify Bright Data endpoints and dataset IDs\nconst bd = config.brightData || {};\nconst mapsDataset = bd.datasets?.googleMaps || {};\nif (!mapsDataset.datasetId || mapsDataset.datasetId.trim() === '') {\n  errors.push(\"Bright Data Google Maps datasetId is missing.\");\n}\nif (!mapsDataset.triggerEndpoint || mapsDataset.triggerEndpoint.trim() === '') {\n  errors.push(\"Bright Data triggerEndpoint is missing.\");\n}\nif (!mapsDataset.progressEndpoint || mapsDataset.progressEndpoint.trim() === '') {\n  errors.push(\"Bright Data progressEndpoint is missing.\");\n}\nif (!mapsDataset.snapshotEndpoint || mapsDataset.snapshotEndpoint.trim() === '') {\n  errors.push(\"Bright Data snapshotEndpoint is missing.\");\n}\n\n// 4. Verify Hunter configuration\nconst hunter = config.hunterMap || {};\nif (!hunter.endpoints?.domainSearch || hunter.endpoints.domainSearch.trim() === '') {\n  errors.push(\"Hunter.io domainSearch endpoint is missing.\");\n}\n\nif (errors.length > 0) {\n  throw new Error(\"CRITICAL CONFIGURATION VALIDATION FAILED:\\n\" + errors.join(\"\\n\"));\n}\n\nconsole.log(\"Configuration Validation Passed. Proceeding with pipeline.\");\nreturn items;"
       }
     }
   ],
@@ -1441,7 +1454,7 @@
       "main": [
         [
           {
-            "node": "Read Search CSV",
+            "node": "Configuration Validator",
             "type": "main",
             "index": 0
           }
@@ -2010,6 +2023,17 @@
         [
           {
             "node": "Final Production Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configuration Validator": {
+      "main": [
+        [
+          {
+            "node": "Read Search CSV",
             "type": "main",
             "index": 0
           }

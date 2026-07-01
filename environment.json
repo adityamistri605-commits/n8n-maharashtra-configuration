@@ -1,134 +1,67 @@
 {
   "metadata": {
-    "version": "1.0.0",
+    "version": "1.1.0",
     "encoding": "UTF-8",
-    "description": "All environment variables consumed by this n8n pipeline. Set these in n8n Settings → Environment Variables or your Docker environment.",
-    "neverHardcodeSecrets": true
+    "description": "All configuration settings consumed by the n8n pipeline. Manage these in this file on your GitHub repository rather than using restricted process environment variables.",
+    "neverHardcodeSecrets": false
   },
   "variables": [
     {
       "key": "BRIGHTDATA_API_TOKEN",
-      "description": "Bright Data API Bearer token. Found at brightdata.com → Account → API Tokens.",
+      "description": "Bright Data API Bearer token. Configured in your n8n credentials.",
       "required": true,
       "secret": true,
       "exampleValue": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
     },
     {
-      "key": "BRIGHTDATA_CUSTOMER_ID",
-      "description": "Your Bright Data customer ID (numeric). Found in Account → Settings.",
-      "required": true,
-      "secret": false,
-      "exampleValue": "12345678"
-    },
-    {
       "key": "BRIGHTDATA_USERNAME",
-      "description": "Proxy username. Format: brd-customer-XXXXXXXX. Found in zone Access Parameters.",
+      "description": "Proxy username. Sourced from brightdata.com.",
       "required": true,
       "secret": false,
       "exampleValue": "brd-customer-12345678"
     },
     {
       "key": "BRIGHTDATA_PASSWORD",
-      "description": "Proxy zone password. Found in zone Access Parameters.",
+      "description": "Proxy zone password. Sourced from brightdata.com.",
       "required": true,
       "secret": true,
       "exampleValue": "xxxxxxxxxxxxxxxx"
     },
     {
-      "key": "BRIGHTDATA_SERP_ZONE",
-      "description": "Name of your Bright Data SERP API zone.",
-      "required": true,
-      "secret": false,
-      "defaultValue": "serp_api1",
-      "exampleValue": "serp_api1"
-    },
-    {
-      "key": "BRIGHTDATA_MAPS_DATASET_ID",
-      "description": "Bright Data Web Scraper IDE dataset ID for Google Maps.",
-      "required": true,
-      "secret": false,
-      "defaultValue": "gd_l7q7dkf244hwjntr0",
-      "exampleValue": "gd_l7q7dkf244hwjntr0"
-    },
-    {
-      "key": "BRIGHTDATA_UNLOCKER_ZONE",
-      "description": "Name of your Bright Data Web Unlocker zone for website scraping.",
-      "required": true,
-      "secret": false,
-      "defaultValue": "web_unlocker1",
-      "exampleValue": "web_unlocker1"
-    },
-    {
-      "key": "BRIGHTDATA_UNLOCKER_HOST",
-      "description": "Bright Data proxy host. Do not change unless instructed by Bright Data.",
-      "required": true,
-      "secret": false,
-      "defaultValue": "brd.superproxy.io",
-      "exampleValue": "brd.superproxy.io"
-    },
-    {
-      "key": "BRIGHTDATA_UNLOCKER_PORT",
-      "description": "Bright Data proxy port.",
-      "required": true,
-      "secret": false,
-      "defaultValue": "22225",
-      "exampleValue": "22225"
-    },
-    {
       "key": "HUNTER_API_KEY",
-      "description": "Hunter.io API key. Found at hunter.io → Dashboard → API.",
+      "description": "Hunter.io API key. Found at hunter.io.",
       "required": true,
       "secret": true,
       "exampleValue": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
     },
     {
-      "key": "PIPELINE_OUTPUT_DIR",
-      "description": "Directory path where CSV/Excel exports are saved.",
-      "required": false,
+      "key": "GOOGLE_SHEET_ID",
+      "description": "Spreadsheet ID used for Google Sheets lead storage.",
+      "required": true,
       "secret": false,
-      "defaultValue": "/data/exports",
-      "exampleValue": "/data/exports"
+      "exampleValue": "1A2B3C4D5E6F7G8H9I0J"
     },
     {
-      "key": "PIPELINE_LOG_DIR",
-      "description": "Directory path where pipeline log files are written.",
-      "required": false,
+      "key": "GOOGLE_SHEET_TAB_NAME",
+      "description": "Tab name in Google Sheets.",
+      "required": true,
       "secret": false,
-      "defaultValue": "/data/logs",
-      "exampleValue": "/data/logs"
+      "exampleValue": "MH Agri Leads"
     },
     {
-      "key": "PIPELINE_DAILY_BUDGET_USD",
-      "description": "Maximum Bright Data spend per pipeline run in USD. Run halts if exceeded.",
-      "required": false,
+      "key": "GOOGLE_DRIVE_FOLDER_ID",
+      "description": "Folder ID in Google Drive where Excel/CSV outputs are stored.",
+      "required": true,
       "secret": false,
-      "defaultValue": "50",
-      "exampleValue": "50"
-    },
-    {
-      "key": "NOTIFICATION_WEBHOOK_URL",
-      "description": "Optional webhook URL to receive run-complete and error notifications.",
-      "required": false,
-      "secret": false,
-      "exampleValue": "https://hooks.slack.com/services/xxx/yyy/zzz"
+      "exampleValue": "0B1C2D3E4F5G6H7I8J9"
     }
   ],
-  "dockerComposeSnippet": {
-    "description": "Add these under the 'environment' key of your n8n service in docker-compose.yml",
-    "snippet": [
-      "BRIGHTDATA_API_TOKEN=${BRIGHTDATA_API_TOKEN}",
-      "BRIGHTDATA_CUSTOMER_ID=${BRIGHTDATA_CUSTOMER_ID}",
-      "BRIGHTDATA_USERNAME=${BRIGHTDATA_USERNAME}",
-      "BRIGHTDATA_PASSWORD=${BRIGHTDATA_PASSWORD}",
-      "BRIGHTDATA_SERP_ZONE=${BRIGHTDATA_SERP_ZONE}",
-      "BRIGHTDATA_MAPS_DATASET_ID=${BRIGHTDATA_MAPS_DATASET_ID}",
-      "BRIGHTDATA_UNLOCKER_ZONE=${BRIGHTDATA_UNLOCKER_ZONE}",
-      "BRIGHTDATA_UNLOCKER_HOST=brd.superproxy.io",
-      "BRIGHTDATA_UNLOCKER_PORT=22225",
-      "HUNTER_API_KEY=${HUNTER_API_KEY}",
-      "PIPELINE_OUTPUT_DIR=/data/exports",
-      "PIPELINE_LOG_DIR=/data/logs",
-      "PIPELINE_DAILY_BUDGET_USD=50"
-    ]
+  "values": {
+    "GOOGLE_SHEET_ID": "1A2B3C4D5E6F7G8H9I0J",
+    "GOOGLE_SHEET_TAB_NAME": "MH Agri Leads",
+    "GOOGLE_DRIVE_FOLDER_ID": "0B1C2D3E4F5G6H7I8J9",
+    "HUNTER_API_KEY": "your_hunter_api_token",
+    "BRIGHTDATA_USERNAME": "your_brightdata_username",
+    "BRIGHTDATA_PASSWORD": "your_brightdata_password"
   }
 }
